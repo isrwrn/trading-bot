@@ -53,7 +53,8 @@ st.set_page_config(
     initial_sidebar_state="auto",
 )
 
-APP_VERSION = "1.1"
+APP_VERSION = "1.2"
+SCORE_VERSION = "v2"  # เปลี่ยนเมื่อแก้สูตรคะแนน → ผลทดสอบย้อนหลังเก่าถูกล้างอัตโนมัติ
 DEFAULT_WATCHLIST = ["BTC-USD", "ETH-USD", "SOL-USD", "NVDA", "AAPL", "DELTA.BK", "PTT.BK"]
 DEFAULT_META = {
     "BTC-USD": {"name": "Bitcoin", "exch": "Crypto", "type": "คริปโต"},
@@ -135,7 +136,9 @@ BT_HORIZONS = [10, 20, 30, 60]
 BT_MIN_N = 20  # จำนวนตัวอย่างขั้นต่ำที่พอจะสรุปได้
 
 GLOSSARY = [
-    ("RSI", "วัดแรงซื้อ–ขาย 0 ถึง 100 · ต่ำกว่า 30 = ถูกขายมากเกินไป · สูงกว่า 70 = ถูกซื้อมากเกินไป"),
+    ("RSI", "วัดแรงซื้อ–ขาย 0 ถึง 100 · ในระบบนี้ RSI สูงในทิศที่เทรด = แรงส่งดี (ผลทดสอบย้อนหลังพบว่าได้ผลดีกว่า "
+            "การมองว่า 'ซื้อมากเกินไป')"),
+    ("แรงส่ง (โมเมนตัม)", "ราคาวิ่งไปทางเดียวแรงแค่ไหนใน 20 วัน เทียบกับความผันผวนปกติ — ปัจจัยที่มีผลต่อคะแนนมากที่สุด"),
     ("EMA 50 / EMA 200", "เส้นค่าเฉลี่ยราคา 50 และ 200 แท่ง ใช้ดูแนวโน้มระยะกลางและระยะยาว ราคาอยู่เหนือเส้น = แนวโน้มขาขึ้น"),
     ("ATR", "ความผันผวนเฉลี่ยต่อแท่ง ใช้กำหนดระยะจุดตัดขาดทุนให้เหมาะกับการเหวี่ยงของราคา"),
     ("RVOL", "ปริมาณซื้อขายเทียบค่าเฉลี่ย 20 วัน เช่น 2x = มากกว่าปกติ 2 เท่า"),
@@ -1031,46 +1034,31 @@ def run_scan(ticker: str, step) -> dict:
             "frames": frames, "snaps": snaps, "sync": sync, "news": news}
 
 
-def confidence(snaps: dict, direction: str) -> tuple[int, list[tuple]]:
-    """#14 — explainable 0–100 score; every factor is listed with its points"""
-    sgn = 1 if direction == "LONG" else -1
-    want, against = ("BULL", "BEAR") if sgn > 0 else ("BEAR", "BULL")
-    d = snaps["1D"]
-    f = [("ราคาปิดรายวันเทียบ EMA200", f"{d['dist200']:+.2f}%", 15 if (d["close"] - d["ema200"]) * sgn > 0 else -15)]
-    for tf in ("1D", "4H", "1H"):
-        s = snaps.get(tf)
-        if s is None:
-            f.append((f"แนวโน้มช่วง{TF_TH[tf]}", "ไม่มีข้อมูล", 0))
-        else:
-            f.append((f"แนวโน้มช่วง{TF_TH[tf]}", BIAS_TH[s["bias"]],
-                      6 if s["bias"] == want else (-6 if s["bias"] == against else 0)))
-    r = d["rsi"]
-    if 40 <= r <= 60:
-        pts = 5
-    elif (r < 30 and sgn > 0) or (r > 70 and sgn < 0):
-        pts = 10   # สวนจุดสุดโต่ง (mean reversion)
-    elif (r > 70 and sgn > 0) or (r < 30 and sgn < 0):
-        pts = -10  # ไล่ราคาในโซนตึงตัว
-    else:
-        pts = 0
-    f.append(("RSI(14) รายวัน", f"{r:.1f}", pts))
-    rv = d["rvol"]
-    if not np.isfinite(rv):
-        pts = 0
-    elif rv >= 2:
-        pts = 12
-    elif rv >= 1.5:
-        pts = 8
-    elif rv >= 1.2:
-        pts = 4
-    elif rv < 0.7:
-        pts = -5
-    else:
-        pts = 0
-    f.append(("วอลุ่มเทียบค่าเฉลี่ย (RVOL)", f"{rv:.2f}x" if np.isfinite(rv) else "ไม่มีข้อมูล", pts))
-    if not d["warm"]:
-        f.append(("ข้อมูล EMA200 ยังไม่พอ", f"{d['bars']} แท่ง", -5))
-    return int(min(99, max(1, 50 + sum(x[2] for x in f)))), f
+def confidence(df1d: pd.DataFrame, direction: str) -> tuple[int, list[tuple], dict]:
+    """#14 — คะแนน 0–100 แบบอธิบายได้ · อ่านจากแท่งล่าสุดของ daily_signals() ตัวเดียวกับที่ใช้ทดสอบย้อนหลัง
+    → คะแนนที่เห็นในแดชบอร์ด = คะแนนที่ผ่านการทดสอบแล้ว"""
+    s = daily_signals(df1d, direction).iloc[-1]
+    long_ = direction == "LONG"
+    mom = "แรงมาก" if s["mom"] >= 0.9 else "แรง" if s["mom"] >= 0.5 else "สวนทาง" if s["mom"] < 0 else "ปานกลาง"
+    slope = ("ชันมาก" if s["slope"] >= 1.3 else "ชัน" if s["slope"] >= 0.85
+             else "แบนหรือสวนทาง" if s["slope"] < 0.45 else "ปานกลาง")
+    rd = s["rsi_dir"]
+    rsi_lbl = "แรงส่งดีมาก" if rd >= 66 else "แรงส่งดี" if rd >= 60 else "แรงส่งอ่อน" if rd < 47 else "ปานกลาง"
+    rng = (("ใกล้จุดสูงสุด 20 วัน" if long_ else "ใกล้จุดต่ำสุด 20 วัน") if s["range"] >= 0.9
+           else "อยู่ฝั่งตรงข้ามของกรอบ" if s["range"] < 0.33 else "กลางกรอบ")
+    chg20 = s["chg20"]
+    rv = s["rvol"]
+    factors = [
+        ("แรงส่งราคา 20 วัน", (f"{chg20 * 100:+.1f}% · " if np.isfinite(chg20) else "") + mom, int(s["p_mom"])),
+        ("ความชันเส้นเฉลี่ย 50 วัน", slope, int(s["p_slope"])),
+        ("RSI ในทิศที่เทรด", f"RSI {s['rsi']:.0f} · {rsi_lbl}", int(s["p_rsi"])),
+        ("ตำแหน่งในกรอบราคา 20 วัน", rng, int(s["p_range"])),
+        ("วอลุ่มเทียบค่าเฉลี่ย (RVOL)", f"{rv:.2f}x" if np.isfinite(rv) else "ไม่มีข้อมูล", int(s["p_rvol"])),
+        ("ทิศทางเทียบแนวโน้มหลัก (EMA200)", "ตามแนวโน้ม" if s["with_trend"] else "สวนแนวโน้ม", int(s["p_trend"])),
+    ]
+    if not s["valid"]:
+        factors.append(("ข้อมูลย้อนหลังยังไม่ถึง 200 วัน", f"{len(df1d)} แท่ง · คะแนนอาจคลาดเคลื่อน", 0))
+    return int(s["score"]), factors, {"mom": mom, "chg20": chg20, "rsi": s["rsi"], "rsi_lbl": rsi_lbl}
 
 
 def build_signal(scan: dict, mode: str, sl_atr: float, rr: float, capital: float, risk_pct: float) -> dict:
@@ -1085,7 +1073,7 @@ def build_signal(scan: dict, mode: str, sl_atr: float, rr: float, capital: float
     raw_units = risk_amt / stop_dist if stop_dist > 0 else 0.0
     units = floor_lot(raw_units, lot)
     notional = units * entry
-    score, factors = confidence(scan["snaps"], direction)
+    score, factors, reading = confidence(scan["frames"]["1D"], direction)
     want = "BULL" if sgn > 0 else "BEAR"
     return {
         "direction": direction, "auto": mode not in ("LONG", "SHORT"),
@@ -1093,7 +1081,7 @@ def build_signal(scan: dict, mode: str, sl_atr: float, rr: float, capital: float
         "stop_dist": stop_dist, "risk_amt": risk_amt, "units": units, "raw_units": raw_units, "lot": lot,
         "notional": notional, "leverage": notional / capital if capital else 0.0,
         "cap_units": floor_lot(capital / entry, lot) if entry > 0 else 0.0,
-        "actual_risk": units * stop_dist, "score": score, "factors": factors,
+        "actual_risk": units * stop_dist, "score": score, "factors": factors, "reading": reading,
         "aligned": sum(1 for s in scan["snaps"].values() if s and s["bias"] == want),
     }
 
@@ -1110,13 +1098,11 @@ def plain_summary(scan: dict, sig: dict) -> list[tuple[str, str]]:
     else:
         out.append(("a", f"แนวโน้มระยะยาว <b>ยังไม่ชัด</b> — ราคาอยู่{'เหนือ' if above else 'ใต้'}เส้นค่าเฉลี่ย 200 วัน "
                          f"{d['dist200']:+.1f}% แต่ระยะกลางสวนทาง"))
-    r = d["rsi"]
-    if r < 30:
-        out.append(("g", f"แรงขาย <b>มากเกินไป</b> (RSI {r:.0f}) — มักเป็นช่วงที่ราคามีโอกาสเด้งกลับ"))
-    elif r > 70:
-        out.append(("r", f"แรงซื้อ <b>มากเกินไป</b> (RSI {r:.0f}) — ระวังราคาย่อตัวลง"))
-    else:
-        out.append(("c", f"แรงซื้อขายอยู่ใน <b>ระดับปกติ</b> (RSI {r:.0f})"))
+    rd = sig["reading"]
+    mom_tone = {"แรงมาก": "g", "แรง": "g", "ปานกลาง": "a", "สวนทาง": "r"}[rd["mom"]]
+    chg = f" — ราคาเปลี่ยนไป {rd['chg20'] * 100:+.1f}% ใน 20 วัน" if np.isfinite(rd["chg20"]) else ""
+    out.append((mom_tone, f"แรงส่งฝั่ง{'ซื้อ' if sig['direction'] == 'LONG' else 'ขาย'} <b>{rd['mom']}</b>{chg} "
+                          f"· RSI {rd['rsi']:.0f} ({rd['rsi_lbl']})"))
     rv = d["rvol"]
     if np.isfinite(rv):
         if rv >= 1.5:
@@ -1134,6 +1120,8 @@ def plain_summary(scan: dict, sig: dict) -> list[tuple[str, str]]:
     else:
         out.append(("r", f"ช่วงเวลาต่าง ๆ <b>ขัดแย้งกัน</b> ({sig['aligned']}/{n} ไปทาง{side}) — สัญญาณยังไม่ชัด"))
     act = "ซื้อ" if sig["direction"] == "LONG" else "ขาย"
+    if sig["direction"] == "SHORT":
+        out.append(("a", "ฝั่งขาย (Short): ผลทดสอบย้อนหลังพบว่าคะแนนยังช่วยคัดกรองฝั่งขายได้ไม่ชัด — ใช้ด้วยความระวัง"))
     out.append(("c", f"ตามพารามิเตอร์ที่ตั้งไว้ ถ้า{act}ที่ <b>{fmt_px(sig['entry'])}</b> จุดตัดขาดทุนคือ "
                      f"<b>{fmt_px(sig['sl'])}</b> และเป้าทำกำไรคือ <b>{fmt_px(sig['tp'])}</b> — เสี่ยง "
                      f"<b>{sig['actual_risk']:,.2f} {ccy}</b> เพื่อลุ้นกำไร <b>{sig['actual_risk'] * sig['rr']:,.2f} {ccy}</b>"))
@@ -1177,35 +1165,47 @@ def corr_matrix(closes: pd.DataFrame, lookback: int) -> tuple[pd.DataFrame, int]
 # 7B. BACKTEST ENGINE (Phase 2 · ข้อ 2) — ตรวจว่าคะแนนความมั่นใจเชื่อถือได้แค่ไหน
 # ==========================================
 def daily_signals(df: pd.DataFrame, mode: str) -> pd.DataFrame:
-    """คะแนนความมั่นใจย้อนหลังทุกแท่งรายวัน (ใช้ข้อมูล ณ วันนั้นเท่านั้น — ไม่มองอนาคต)
-    สูตรเดียวกับ confidence() แต่ใช้เฉพาะปัจจัยรายวัน เพราะข้อมูล 4H/1H ย้อนหลังมีไม่ถึงปี"""
+    """สูตรคะแนนความมั่นใจ v2 — วัด "ความแรงของแรงส่งในทิศที่เทรด" ทุกแท่งรายวัน (ใช้ข้อมูล ณ วันนั้นเท่านั้น)
+    ใช้ทั้งหน้าภาพรวม (แท่งล่าสุด) และการทดสอบย้อนหลัง
+    ที่มาของเกณฑ์: เลือกจาก 60% แรกของข้อมูลรายวัน 5 ปี 16 สินทรัพย์ แล้วยืนยันกับ 40% หลังที่สูตรไม่เคยเห็น
+    (สูตรเดิมให้คะแนน RSI สวนทางกับผลจริง และปัจจัยแนวโน้มได้ +15 เสมอในโหมดอัตโนมัติ)"""
     o, h, l, c, v = (df[k].astype("float64") for k in ("Open", "High", "Low", "Close", "Volume"))
     e50, e200, r, a = ema(c, 50), ema(c, 200), rsi(c), atr(h, l, c)
-    rv = (v / v.shift(1).rolling(20).mean()).replace([np.inf, -np.inf], np.nan)
     if mode == "LONG":
         sgn = np.ones(len(c))
     elif mode == "SHORT":
         sgn = -np.ones(len(c))
     else:
         sgn = np.where(c >= e200, 1.0, -1.0)
-    bull = ((c > e50) & (e50 > e200)).to_numpy()
-    bear = ((c < e50) & (e50 < e200)).to_numpy()
-    trend = np.where((c - e200).to_numpy() * sgn > 0, 15, -15)
-    bias = np.where(np.where(sgn > 0, bull, bear), 6, np.where(np.where(sgn > 0, bear, bull), -6, 0))
-    rr_ = r.to_numpy()
-    rsi_pts = np.select([(rr_ >= 40) & (rr_ <= 60),
-                         ((rr_ < 30) & (sgn > 0)) | ((rr_ > 70) & (sgn < 0)),
-                         ((rr_ > 70) & (sgn > 0)) | ((rr_ < 30) & (sgn < 0))], [5, 10, -10], 0)
-    rv_ = rv.to_numpy()
-    rv_pts = np.select([rv_ >= 2, rv_ >= 1.5, rv_ >= 1.2, rv_ < 0.7], [12, 8, 4, -5], 0)  # NaN → 0
-    score = np.clip(50 + trend + bias + rsi_pts + rv_pts, 1, 99)
+    g = pd.Series(sgn, index=c.index)
+    chg20 = c / c.shift(20) - 1
+    mom = (g * chg20 / (a / c * np.sqrt(20))).to_numpy()        # แรงส่ง 20 วัน หารด้วยความผันผวน
+    slope = (g * (e50 - e50.shift(10)) / a).to_numpy()           # ความชันเส้นเฉลี่ย 50 ใน 10 แท่ง (หน่วย ATR)
+    rd = np.where(sgn > 0, r, 100 - r)                            # RSI ในทิศที่เทรด (ฝั่งขายกลับด้าน)
+    hh, ll = h.rolling(20).max(), l.rolling(20).min()
+    pos = ((c - ll) / (hh - ll)).to_numpy()
+    rng = np.where(sgn > 0, pos, 1 - pos)                         # 1 = อยู่ปลายกรอบ 20 วันฝั่งที่ได้เปรียบ
+    rv = (v / v.shift(1).rolling(20).mean()).replace([np.inf, -np.inf], np.nan).to_numpy()
+    with_trend = (c - e200).to_numpy() * sgn > 0
+    pts = {  # เงื่อนไขที่เป็น NaN = False → 0 คะแนน
+        "p_mom": np.select([mom >= 0.9, mom >= 0.5, mom < 0], [15, 6, -10], 0),
+        "p_slope": np.select([slope >= 1.3, slope >= 0.85, slope < 0.45], [12, 4, -6], 0),
+        "p_rsi": np.select([rd >= 66, rd >= 60, rd < 47], [10, 5, -8], 0),
+        "p_range": np.select([rng >= 0.9, rng < 0.33], [8, -6], 0),
+        "p_rvol": np.select([rv >= 1.27, rv < 0.69], [5, -5], 0),
+        "p_trend": np.where(with_trend, 0, -10),                  # สวน EMA200 (มีผลเมื่อกำหนดทิศเอง)
+    }
+    score = np.clip(50 + sum(pts.values()), 1, 99)
     valid = (np.arange(len(c)) >= 200) & a.notna().to_numpy() & r.notna().to_numpy()
     return pd.DataFrame({"open": o.to_numpy(), "high": h.to_numpy(), "low": l.to_numpy(), "close": c.to_numpy(),
-                         "atr": a.to_numpy(), "sgn": sgn, "score": score, "valid": valid}, index=df.index)
+                         "atr": a.to_numpy(), "sgn": sgn, "score": score, "valid": valid,
+                         "mom": mom, "slope": slope, "rsi": r.to_numpy(), "rsi_dir": rd, "range": rng, "rvol": rv,
+                         "with_trend": with_trend, "chg20": chg20.to_numpy(), **pts}, index=df.index)
 
 
 @st.cache_data(ttl=600, max_entries=64, show_spinner=False)
-def backtest_asset(ticker: str, mode: str, sl_atr: float, rr: float, horizon: int) -> pd.DataFrame:
+def backtest_asset(ticker: str, mode: str, sl_atr: float, rr: float, horizon: int,
+                   version: str = SCORE_VERSION) -> pd.DataFrame:
     """จำลองการเข้าเทรดทุกวันในอดีต แล้วไล่แท่งถัดไปว่าชน TP หรือ SL ก่อน
     กติกาแบบระมัดระวัง: ชนทั้งคู่ในแท่งเดียว = นับเป็น SL · ราคากระโดดทะลุ SL = ออกที่ราคาเปิด ·
     ไม่ชนภายใน `horizon` วัน = ปิดที่ราคาปิดวันสุดท้าย"""
@@ -1273,7 +1273,7 @@ def bt_bucket_of(score: int) -> tuple[int, int, str]:
 
 
 def bt_key(tickers: list[str], mode: str, sl_atr: float, rr: float, horizon: int) -> tuple:
-    return tuple(tickers), mode, float(sl_atr), float(rr), int(horizon)
+    return tuple(tickers), mode, float(sl_atr), float(rr), int(horizon), SCORE_VERSION
 
 
 # ==========================================
@@ -1497,7 +1497,8 @@ def build_ai_prompt(scan: dict, sig: dict, query: str, include_news: bool, capit
     lines += [
         f"PLAN: {sig['direction']} entry={fmt_px(sig['entry'])} SL={fmt_px(sig['sl'])} ({sig['sl_atr']:g} ATR) "
         f"TP={fmt_px(sig['tp'])} R:R=1:{sig['rr']:g}",
-        f"CONFIDENCE: {sig['score']}/100 · MTF aligned {sig['aligned']}/3 · "
+        f"CONFIDENCE (momentum model {SCORE_VERSION}, backtested on daily data): {sig['score']}/100 · "
+        f"MTF aligned {sig['aligned']}/3 (info only, not in score) · "
         + "; ".join(f"{a}={b} ({c:+d})" for a, b, c in sig["factors"]),
         f"RISK: capital={capital:,.2f} {ccy} risk={risk_pct:g}% ({sig['risk_amt']:,.2f}) "
         f"size={fmt_units(sig['units'], sig['lot'])} units notional={sig['notional']:,.2f} leverage={sig['leverage']:.2f}x",
@@ -1971,8 +1972,8 @@ def view_overview(cfg: dict, scan: dict | None, sig: dict | None):
     with k1:
         html_block(kpi("ความมั่นใจของระบบ", f"{sig['score']}<small>/ 100</small>",
                        f"{chip(band, band_tone)}{chip(side, 'c')}",
-                       tip="คะแนนจากสูตรคำนวณ: แนวโน้ม + ความสอดคล้องหลายช่วงเวลา + RSI + วอลุ่ม "
-                           "(ดูที่มาได้ในเมนูกราฟและอินดิเคเตอร์)",
+                       tip="วัดความแรงของแรงส่งในทิศที่เทรด: แรงส่ง 20 วัน + ความชันเส้นเฉลี่ย 50 + RSI + "
+                           "ตำแหน่งในกรอบราคา + วอลุ่ม · ผ่านการทดสอบย้อนหลังกับ 16 สินทรัพย์ (ดูที่มาในเมนูกราฟ)",
                        extra=bar(sig["score"], band_tone), tone=band_tone))
     with k2:
         html_block(kpi("จุดตัดขาดทุน (SL)", f"{fmt_px(sig['sl'])}",
@@ -2011,7 +2012,7 @@ def view_overview(cfg: dict, scan: dict | None, sig: dict | None):
         tone = "g" if sig["aligned"] == 3 else ("a" if sig["aligned"] == 2 else "r")
         confl = (f'<div class="confl"><span>ไปทาง{BIAS_TH[want]}</span>'
                  f'<b class="t-{tone}">{sig["aligned"]} / 3</b></div>')
-        html_block(f'<div class="card">{card_head("แนวโน้ม 3 ช่วงเวลา", "ยิ่งไปทางเดียวกันมาก สัญญาณยิ่งชัด", tip="ดูแนวโน้มจากราคาเทียบเส้นค่าเฉลี่ย 50 และ 200 แท่ง ในกราฟรายวัน 4 ชั่วโมง และ 1 ชั่วโมง")}'
+        html_block(f'<div class="card">{card_head("แนวโน้ม 3 ช่วงเวลา", "ข้อมูลประกอบ · ไม่ได้นับรวมในคะแนนความมั่นใจ", tip="ดูแนวโน้มจากราคาเทียบเส้นค่าเฉลี่ย 50 และ 200 แท่ง ในกราฟรายวัน 4 ชั่วโมง และ 1 ชั่วโมง · ข้อมูล 4 ชม./1 ชม. ย้อนหลังมีไม่ถึงปี จึงยังทดสอบย้อนหลังไม่ได้")}'
                    f'{tfs}{confl}</div>')
 
     # แถวที่ 4 · กราฟ + แผนการเทรด
@@ -2091,7 +2092,8 @@ def view_chart(cfg: dict, scan: dict | None, sig: dict | None):
     with l:
         with st.container(key="card_score"):
             html_block(card_head("ที่มาของคะแนนความมั่นใจ",
-                                 f"เริ่มที่ 50 คะแนน แล้วบวก/ลบตามปัจจัย · ได้ {sig['score']} คะแนน ({SIDE_TH[sig['direction']]})"))
+                                 f"เริ่มที่ 50 คะแนน แล้วบวก/ลบตามปัจจัย · ได้ {sig['score']} คะแนน ({SIDE_TH[sig['direction']]}) · "
+                                 f"สูตร {SCORE_VERSION} ผ่านการทดสอบย้อนหลังแล้ว"))
             st.dataframe(pd.DataFrame(sig["factors"], columns=["ปัจจัย", "ค่าที่อ่านได้", "คะแนน"]), hide_index=True,
                          column_config={"คะแนน": st.column_config.NumberColumn(format="%+d")})
     with r:
@@ -2255,7 +2257,7 @@ def bt_evidence(cfg: dict, ticker: str, score: int) -> tuple[str, str] | None:
     bt = st.session_state.bt
     if not bt or ticker not in bt["key"][0] or bt["trades"].empty:
         return None
-    if bt["key"][1:4] != (cfg["direction"], float(cfg["sl_atr"]), float(cfg["rr"])):
+    if bt["key"][1:4] != (cfg["direction"], float(cfg["sl_atr"]), float(cfg["rr"])) or bt["key"][-1] != SCORE_VERSION:
         return None
     lo, hi, label = bt_bucket_of(score)
     tr = bt["trades"]
@@ -2315,7 +2317,8 @@ def view_backtest(cfg: dict):
                 log.append(f"จำลองการเทรด {t}")
                 ph.markdown(loading_html("ผลย้อนหลัง", log[-6:] + ["กำลังคำนวณ…"]), unsafe_allow_html=True)
                 try:
-                    frames.append(backtest_asset(t, cfg["direction"], float(cfg["sl_atr"]), float(cfg["rr"]), int(horizon)))
+                    frames.append(backtest_asset(t, cfg["direction"], float(cfg["sl_atr"]), float(cfg["rr"]),
+                                                 int(horizon), SCORE_VERSION))
                 except RateLimited as e:
                     st.error(f"ถูกจำกัดความถี่ · {e}")
                     break
@@ -2422,7 +2425,7 @@ def view_backtest(cfg: dict):
                 "จุดเข้า": st.column_config.NumberColumn(format="%.4f"),
                 "ออกที่": st.column_config.NumberColumn(format="%.4f"),
                 "R": st.column_config.NumberColumn(format="%+.2f")})
-    html_block('<div class="note">ข้อจำกัด: ใช้เฉพาะปัจจัยรายวัน (ไม่รวม 4 ชม./1 ชม. เพราะข้อมูลย้อนหลังมีไม่ถึงปี) · '
+    html_block(f'<div class="note">คะแนนที่ทดสอบคือคะแนนเดียวกับหน้าภาพรวม (สูตร {SCORE_VERSION}) · ข้อจำกัด: '
                'ไม่รวมค่าธรรมเนียมและ slippage · ชนทั้ง TP และ SL ในวันเดียวกันนับเป็นขาดทุน · '
                'สัญญาณวันติดกันอาจซ้อนกัน · ผลในอดีตไม่รับประกันอนาคต</div>')
 
