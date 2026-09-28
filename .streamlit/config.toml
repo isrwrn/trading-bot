@@ -1,26 +1,27 @@
 [theme]
 base = "dark"
-primaryColor = "#00F0FF"
-backgroundColor = "#03060C"
-secondaryBackgroundColor = "#0B111C"
-textColor = "#C9D4E3"
-borderColor = "#1A2535"
-dataframeBorderColor = "#1A2535"
-dataframeHeaderBackgroundColor = "#0B111C"
-linkColor = "#00F0FF"
-greenColor = "#00FF9C"
-redColor = "#FF2E63"
-yellowColor = "#FFB020"
-violetColor = "#B45CFF"
-baseRadius = "none"
+primaryColor = "#22D3EE"
+backgroundColor = "#0A0F1A"
+secondaryBackgroundColor = "#131D2F"
+textColor = "#E6EDF7"
+borderColor = "#22314A"
+dataframeBorderColor = "#22314A"
+dataframeHeaderBackgroundColor = "#16223A"
+linkColor = "#22D3EE"
+greenColor = "#34D399"
+redColor = "#F87171"
+yellowColor = "#FBBF24"
+violetColor = "#A78BFA"
+baseRadius = "0.75rem"
+buttonRadius = "0.75rem"
 showWidgetBorder = true
-# หัวข้อ = sans-serif (Chakra Petch) · เนื้อหา = serif (Noto Serif Thai)
-font = "'Noto Serif Thai':https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;500;600;700&display=swap, serif"
-headingFont = "'Chakra Petch':https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap, sans-serif"
+# ตัวอักษรแนวโค้งมน: หัวข้อ = Mitr · เนื้อหา = K2D
+font = "K2D:https://fonts.googleapis.com/css2?family=K2D:wght@300;400;500;600;700&display=swap, sans-serif"
+headingFont = "Mitr:https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&display=swap, sans-serif"
 
 [theme.sidebar]
-backgroundColor = "#070B14"
-secondaryBackgroundColor = "#0B111C"
+backgroundColor = "#0D1422"
+secondaryBackgroundColor = "#131D2F"
 
 [client]
 toolbarMode = "minimal"
