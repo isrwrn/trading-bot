@@ -60,7 +60,7 @@ def ask_veteran(market_data: dict, user_intent: str):
     2. เหตุผลเชิงตัวเลขและจิตวิทยาตลาด (อ้างอิงข้อมูลข้างต้นเท่านั้น ห้ามเดา)
     3. แผน Action ที่ต้องทำทันที พร้อมจุดเสี่ยงที่ต้องระวัง
     """
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-1.0-pro")
     response = model.generate_content(prompt)
     return response.text
 
