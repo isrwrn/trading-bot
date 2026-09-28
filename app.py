@@ -8,126 +8,128 @@ from datetime import datetime
 # ==========================================
 # 1. SYSTEM CONFIG & PAGE SETUP
 # ==========================================
-st.set_page_config(page_title="AI Trading Assistant", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="NEXUS | AI Trading Dashboard", layout="wide", initial_sidebar_state="collapsed")
 
 # ==========================================
-# 2. ULTIMATE GLASSMORPHISM & FUTURISTIC CSS
+# 2. TYPOGRAPHY & INTERACTIVE CSS
 # ==========================================
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Space+Grotesk:wght@500;700&display=swap');
+    /* นำเข้าฟอนต์: Sans-serif (หัวข้อ), Serif (เนื้อหา), และ Space Grotesk (ตัวเลข) */
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@500;700&family=Noto+Serif+Thai:wght@400;600;700&family=Space+Grotesk:wght@600;700&display=swap');
 
-    /* เปลี่ยนพื้นหลังแบบภาพเรฟ (Deep Navy/Black Gradient) */
-    .stApp {
-        background: radial-gradient(circle at 50% 0%, #151b2b 0%, #05080f 100%) !important;
+    /* เนื้อหาทั่วไป (Body) ใช้ฟอนต์ Serif (มีหัว) */
+    html, body, [class*="css"], p, div, span, input {
+        font-family: 'Noto Serif Thai', serif !important;
+        background: radial-gradient(circle at 50% 0%, #0d111a 0%, #030508 100%) !important;
         background-attachment: fixed;
         color: #e2e8f0;
-        font-family: 'Outfit', sans-serif;
     }
 
-    /* ซ่อน Header/Footer ดั้งเดิมของ Streamlit ให้ดูเป็น App จริงๆ */
+    /* หัวข้อและปุ่ม (Headings) ใช้ฟอนต์ Sans-serif (ไม่มีหัว) */
+    h1, h2, h3, h4, h5, h6, .sans-heading, label, .stButton > button {
+        font-family: 'Noto Sans Thai', sans-serif !important;
+    }
+
+    /* ซ่อนแถบ Default ของ Streamlit */
     header {visibility: hidden;}
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
 
     /* -----------------------------------
-       ออกแบบการ์ด (Glass Cards)
+       Interactive Glass Cards
        ----------------------------------- */
     .glass-card {
-        background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.4));
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 24px;
+        background: linear-gradient(145deg, rgba(20, 30, 48, 0.75), rgba(10, 15, 25, 0.6));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px;
         padding: 24px;
-        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         margin-bottom: 20px;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border 0.2s ease;
     }
     .glass-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 35px -10px rgba(0, 240, 255, 0.15);
-        border: 1px solid rgba(0, 240, 255, 0.2);
+        transform: translateY(-4px) scale(1.01);
+        box-shadow: 0 15px 40px -10px rgba(0, 240, 255, 0.2);
+        border: 1px solid rgba(0, 240, 255, 0.4);
     }
 
     /* -----------------------------------
-       Typography & Colors (เน้นสีตามจุดสำคัญ)
+       Typography & Highlight Colors
        ----------------------------------- */
     .title-text {
-        font-family: 'Space Grotesk', sans-serif;
         font-size: 2.2rem;
         font-weight: 700;
         background: linear-gradient(90deg, #ffffff, #94a3b8);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        margin-bottom: 2px;
+    }
+    
+    .metric-label {
+        font-family: 'Noto Sans Thai', sans-serif !important;
+        color: #94a3b8;
+        font-size: 0.95rem;
+        font-weight: 700; /* เน้นตัวหนาที่หัวข้อสำคัญ */
+        letter-spacing: 0.5px;
         margin-bottom: 5px;
     }
-    .subtitle-text {
-        color: #64748b;
-        font-size: 1rem;
-        margin-bottom: 20px;
-    }
-    .metric-label {
-        color: #94a3b8;
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 8px;
-    }
+    
     .metric-value {
-        font-family: 'Space Grotesk', sans-serif;
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #ffffff;
+        font-family: 'Space Grotesk', sans-serif !important;
+        font-size: 2.6rem;
+        font-weight: 700; /* เน้นตัวเลขหนาพิเศษ */
     }
-    .highlight-blue { color: #00f0ff; text-shadow: 0 0 15px rgba(0,240,255,0.4); }
-    .highlight-purple { color: #b900ff; text-shadow: 0 0 15px rgba(185,0,255,0.4); }
-    .highlight-green { color: #10b981; }
-    .highlight-red { color: #ef4444; }
+    
+    /* สีเด่นชัดในจุดสำคัญ */
+    .color-cyan { color: #00f0ff; text-shadow: 0 0 12px rgba(0,240,255,0.5); }
+    .color-purple { color: #b900ff; text-shadow: 0 0 12px rgba(185,0,255,0.5); }
+    .color-green { color: #10b981; text-shadow: 0 0 10px rgba(16,185,129,0.4); }
+    .color-red { color: #ef4444; text-shadow: 0 0 10px rgba(239,68,68,0.4); }
+    .color-white-bold { color: #ffffff; font-weight: 700; }
 
     /* -----------------------------------
-       ปรับแต่ง UI ของ Streamlit (Input & Button)
+       UI Elements (Inputs & Buttons)
        ----------------------------------- */
     .stTextInput > div > div > input, .stSelectbox > div > div > div {
-        background-color: rgba(15, 23, 42, 0.6) !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
-        color: #fff !important;
-        border-radius: 16px !important;
-        padding: 12px 16px !important;
-        font-family: 'Outfit', sans-serif !important;
+        background-color: rgba(10, 15, 25, 0.8) !important;
+        border: 1px solid rgba(255,255,255,0.15) !important;
+        border-radius: 12px !important;
+        padding: 10px 15px !important;
+        font-weight: 600 !important;
     }
     
     .stButton > button {
-        background: linear-gradient(90deg, #4f46e5, #7c3aed) !important;
+        background: linear-gradient(90deg, #2563eb, #7c3aed) !important;
         border: none !important;
         color: white !important;
-        border-radius: 16px !important;
-        padding: 12px 24px !important;
-        font-family: 'Space Grotesk', sans-serif !important;
+        border-radius: 12px !important;
+        padding: 12px 20px !important;
         font-weight: 700 !important;
         font-size: 1rem !important;
-        box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4) !important;
-        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3) !important;
+        transition: all 0.2s ease !important;
         width: 100%;
+        text-transform: uppercase;
     }
     .stButton > button:hover {
-        background: linear-gradient(90deg, #6366f1, #8b5cf6) !important;
-        box-shadow: 0 8px 25px rgba(124, 58, 237, 0.6) !important;
-        transform: scale(1.02);
+        background: linear-gradient(90deg, #3b82f6, #8b5cf6) !important;
+        box-shadow: 0 8px 25px rgba(124, 58, 237, 0.5) !important;
+        transform: scale(1.03); /* ปรับให้ปุ่มเด้งรับนิ้วแบบ Interactive */
     }
     
-    /* ซ่อน Label ของ input บางตัวเพื่อความสะอาด */
+    /* ซ่อน Label พื้นฐานของ Streamlit */
     label[data-testid="stWidgetLabel"] { display: none; }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. CORE LOGIC (เชื่อมโยงข้อมูล)
+# 3. CORE LOGIC (STATE MANAGEMENT & DATA)
 # ==========================================
-if 'market_data' not in st.session_state:
-    st.session_state.market_data = None
-if 'ai_response' not in st.session_state:
-    st.session_state.ai_response = None
+if 'market_data' not in st.session_state: st.session_state.market_data = None
+if 'ai_response' not in st.session_state: st.session_state.ai_response = None
 
 @st.cache_data(ttl=60, show_spinner=False)
 def scan_market(ticker):
@@ -154,148 +156,144 @@ def analyze_with_ai(data, prompt_text, api_key):
     genai.configure(api_key=api_key)
     sys_prompt = f"""
     คุณคือผู้ช่วย AI วิเคราะห์การเทรดอัจฉริยะ (อ้างอิงข้อมูล: {data['ticker']}, ราคา {data['price']:.2f}, EMA {data['ema200']:.2f}, RSI {data['rsi']:.1f})
-    ตอบคำถามผู้ใช้ด้วยภาษาไทยที่ทันสมัย เข้าใจง่าย จัดรูปแบบให้อ่านง่าย มีการใช้ Bullet points
+    ตอบคำถามผู้ใช้ด้วยภาษาไทย 
+    กฎสำคัญ: จงใช้เครื่องหมาย **เน้นข้อความหนา** ในจุดที่เป็นตัวเลข, ราคา, และแอคชั่นสำคัญเสมอ เพื่อให้อ่านกวาดสายตาได้รวดเร็ว
     คำถาม: {prompt_text}
     """
     try:
         model = genai.GenerativeModel("gemini-3.8-flash")
         return model.generate_content(sys_prompt).text
-    except Exception as e: return f"⚠️ ตรวจพบข้อผิดพลาด: {str(e)}"
+    except Exception as e: return f"⚠️ **เกิดข้อผิดพลาด:** {str(e)}"
 
 # ==========================================
-# 4. UI/UX LAYOUT (ประกอบร่างหน้าจอ)
+# 4. UI/UX DASHBOARD LAYOUT
 # ==========================================
-# --- Header ---
-st.markdown("<div class='title-text'>สวัสดี, ยินดีต้อนรับกลับสู่ระบบ</div>", unsafe_allow_html=True)
-st.markdown(f"<div class='subtitle-text'>AI ASSISTANT TERMINAL • {datetime.now().strftime('%A, %d %B %Y')}</div>", unsafe_allow_html=True)
+st.markdown("<div class='title-text sans-heading'>ศูนย์ควบคุมกลยุทธ์การลงทุน (NEXUS AI)</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='color: #64748b; margin-bottom: 25px; font-weight: 600;'>อัปเดตข้อมูลล่าสุด: <b>{datetime.now().strftime('%d %B %Y | %H:%M')}</b></div>", unsafe_allow_html=True)
 
-# --- แบ่ง 3 คอลัมน์หลัก ---
-col_left, col_mid, col_right = st.columns([1.2, 2, 1.2], gap="large")
+# แยกระบบเป็น 3 คอลัมน์ (เหมือนหน้าปัด Dashboard เครื่องบิน)
+col_setup, col_ai, col_data = st.columns([1.2, 2.2, 1.2], gap="large")
 
-# ==========================================
-# COLUMN 1: แผงควบคุมและตั้งค่า (Left Panel)
-# ==========================================
-with col_left:
+# ------------------------------------------
+# [COLUMN 1] SYSTEM SETUP & TARGET
+# ------------------------------------------
+with col_setup:
     st.markdown("""
     <div class="glass-card">
-        <div class="metric-label" style="color: #00f0ff;">⚙️ SYSTEM SETUP</div>
-        <div style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 10px;">เชื่อมต่อฐานข้อมูล AI</div>
+        <div class="metric-label color-cyan">⚙️ การเชื่อมต่อ API (GEMINI)</div>
+        <div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 8px;">*จำเป็นต้องใส่รหัสเพื่อใช้งานระบบ AI</div>
     </div>
     """, unsafe_allow_html=True)
-    # ใช้ Widget ปกติ แต่อยู่ใต้ Card ด้านบน
-    api_key = st.text_input("API KEY", type="password", placeholder="วาง Gemini API Key ที่นี่...")
+    api_key = st.text_input("API KEY", type="password", placeholder="วางรหัส API Key...")
     
     st.markdown("""
-    <div class="glass-card" style="margin-top: 20px;">
-        <div class="metric-label" style="color: #b900ff;">🎯 TARGET LOCK</div>
-        <div style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 10px;">เลือกสินทรัพย์ที่ต้องการวิเคราะห์</div>
+    <div class="glass-card" style="margin-top: 15px;">
+        <div class="metric-label color-purple">🎯 ล็อกเป้าหมายสินทรัพย์</div>
+        <div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 8px;">เลือกหุ้น หรือ คริปโต ที่ต้องการสแกน</div>
     </div>
     """, unsafe_allow_html=True)
-    
     ticker = st.selectbox("TICKER", ["BTC-USD", "ETH-USD", "SOL-USD", "NVDA", "AAPL", "DELTA.BK", "PTT.BK"])
     
-    if st.button("🚀 SYNC DATA (ดึงข้อมูล)"):
-        with st.spinner("เชื่อมต่อสัญญาณดาวเทียม..."):
+    st.write("") # Spacer
+    if st.button("🚀 ประมวลผลข้อมูล (SYNC)"):
+        with st.spinner("กำลังดึงข้อมูลจากตลาดโลก..."):
             st.session_state.market_data = scan_market(ticker)
-            st.session_state.ai_response = None # เคลียร์คำตอบเก่า
+            st.session_state.ai_response = None
 
-# ==========================================
-# COLUMN 2: AI Assistant & Chat (Center Panel)
-# ==========================================
-with col_mid:
-    # สร้างกรอบ AI Avatar จำลองด้วย CSS กราฟิกแสงวงแหวน
+# ------------------------------------------
+# [COLUMN 2] AI COMMAND CENTER
+# ------------------------------------------
+with col_ai:
+    # กราฟิก AI Avatar สไตล์ Sci-Fi Dashboard
     st.markdown("""
-    <div class="glass-card" style="text-align: center; padding: 40px 20px; background: linear-gradient(180deg, rgba(15,23,42,0.8), rgba(9,9,11,0.9));">
-        <div style="width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 20px; 
-                    background: radial-gradient(circle, rgba(0,240,255,0.2) 0%, rgba(124,58,237,0.1) 100%);
-                    box-shadow: 0 0 40px rgba(0, 240, 255, 0.4), inset 0 0 20px rgba(185, 0, 255, 0.5);
-                    display: flex; align-items: center; justify-content: center; border: 2px solid rgba(0,240,255,0.3);">
-            <span style="font-size: 3rem;">🤖</span>
+    <div class="glass-card" style="text-align: center; padding: 30px 20px; border-top: 3px solid #00f0ff;">
+        <div style="width: 100px; height: 100px; border-radius: 50%; margin: 0 auto 15px; 
+                    background: radial-gradient(circle, rgba(0,240,255,0.15) 0%, rgba(37,99,235,0.1) 100%);
+                    box-shadow: 0 0 30px rgba(0, 240, 255, 0.3), inset 0 0 15px rgba(124, 58, 237, 0.4);
+                    display: flex; align-items: center; justify-content: center; border: 1px solid rgba(0,240,255,0.5);">
+            <span style="font-size: 2.5rem;">🤖</span>
         </div>
-        <div class="metric-label">AI QUANT ASSISTANT</div>
-        <div style="color: #fff; font-size: 1.2rem; font-weight: 300; margin-top: 10px;">
-            "ฉันพร้อมประมวลผลกลยุทธ์ให้คุณแล้ววันนี้"
+        <div class="metric-label color-white-bold" style="font-size: 1.1rem;">AI QUANT ASSISTANT</div>
+        <div style="color: #cbd5e1; font-size: 1.05rem; margin-top: 5px;">
+            "รอรับคำสั่งประเมินความเสี่ยงและจังหวะตลาด"
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # ช่องแชทโต้ตอบ
-    st.markdown("<div class='metric-label' style='margin-top: 20px;'>คำสั่งประมวลผล (COMMAND)</div>", unsafe_allow_html=True)
-    user_q = st.text_input("CHAT", placeholder="พิมพ์คำถาม... (เช่น ควรเข้าซื้อราคานี้หรือไม่?)")
+    st.markdown("<div class='metric-label' style='margin-top: 15px;'>ส่งคำสั่งวิเคราะห์ (COMMAND INPUT)</div>", unsafe_allow_html=True)
+    user_q = st.text_input("CHAT", placeholder="พิมพ์คำถาม... (เช่น จุดนี้เข้าซื้อได้หรือยัง? ตั้ง Stop loss ตรงไหน?)")
     
-    if st.button("✨ ANALYZE (วิเคราะห์ทันที)"):
+    if st.button("✨ ให้ AI วิเคราะห์กลยุทธ์"):
         if not api_key:
-            st.error("กรุณาใส่ API Key ด้านซ้ายมือระบบก่อนครับ")
+            st.error("⚠️ ขัดข้อง: กรุณาใส่ API Key ด้านซ้ายมือก่อนครับ")
         elif not st.session_state.market_data:
-            st.error("กรุณากดปุ่ม SYNC DATA เพื่อดึงข้อมูลตลาดก่อนครับ")
+            st.error("⚠️ ขัดข้อง: กรุณากดปุ่มประมวลผลข้อมูลสินทรัพย์ก่อนครับ")
         else:
-            with st.spinner("AI กำลังคำนวณความน่าจะเป็น..."):
+            with st.spinner("AI กำลังวิเคราะห์ตัวเลขสถิติ..."):
                 st.session_state.ai_response = analyze_with_ai(st.session_state.market_data, user_q, api_key)
 
-    # พื้นที่แสดงคำตอบของ AI
+    # กรอบแสดงผลลัพธ์ของ AI
     if st.session_state.ai_response:
         st.markdown(f"""
-        <div class="glass-card" style="margin-top: 20px; border-left: 4px solid #b900ff;">
-            <div class="metric-label" style="color: #b900ff; margin-bottom: 15px;">📊 AI INSIGHTS (ผลการประเมิน)</div>
-            <div style="font-size: 1rem; line-height: 1.6; color: #f1f5f9;">
+        <div class="glass-card" style="margin-top: 20px; border-left: 4px solid #b900ff; background: rgba(185,0,255,0.05);">
+            <div class="metric-label color-purple" style="font-size: 1.1rem; margin-bottom: 15px;">📊 สรุปกลยุทธ์จาก AI (ACTION PLAN)</div>
+            <div style="font-size: 1.1rem; line-height: 1.7; color: #f8fafc;">
                 {st.session_state.ai_response}
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-# ==========================================
-# COLUMN 3: Data Dashboard (Right Panel)
-# ==========================================
-with col_right:
+# ------------------------------------------
+# [COLUMN 3] LIVE MARKET METRICS
+# ------------------------------------------
+with col_data:
     if st.session_state.market_data:
         d = st.session_state.market_data
-        trend_class = "highlight-green" if d['price'] > d['ema200'] else "highlight-red"
-        trend_text = "BULLISH (ขาขึ้น)" if d['price'] > d['ema200'] else "BEARISH (ขาลง)"
+        is_bullish = d['price'] > d['ema200']
+        trend_class = "color-green" if is_bullish else "color-red"
+        trend_text = "ขาขึ้น (BULLISH)" if is_bullish else "ขาลง (BEARISH)"
         
-        # กล่องราคา (เน้นสีฟ้า)
+        # 1. การ์ดราคาปัจจุบัน
         st.markdown(f"""
-        <div class="glass-card">
-            <div class="metric-label">💰 ราคาปัจจุบัน ({d['ticker']})</div>
-            <div class="metric-value highlight-blue">{d['price']:,.2f}</div>
-            <div style="font-size: 0.9rem; margin-top: 5px; color: #94a3b8;">
-                สถานะแนวโน้ม: <span class="{trend_class}">{trend_text}</span>
+        <div class="glass-card" style="border-right: 3px solid #00f0ff;">
+            <div class="metric-label sans-heading">💰 ราคาปัจจุบัน <span class="color-white-bold">({d['ticker']})</span></div>
+            <div class="metric-value color-cyan">{d['price']:,.2f}</div>
+            <div style="font-size: 0.95rem; margin-top: 8px; font-weight: 600;">
+                ทิศทางหลัก: <span class="{trend_class}">{trend_text}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-        # กล่อง RSI & โมเมนตัม
+        # 2. การ์ดโมเมนตัม
         st.markdown(f"""
         <div class="glass-card">
-            <div class="metric-label">⚡ โมเมนตัมตลาด (RSI)</div>
-            <div class="metric-value">{d['rsi']:.1f}</div>
-            <div style="font-size: 0.85rem; margin-top: 8px; color: #64748b;">
-                *ตํ่ากว่า 30 = โอกาสซื้อ / สูงกว่า 70 = ระวังแรงขาย
-            </div>
+            <div class="metric-label sans-heading">⚡ แรงเหวี่ยงตลาด (RSI)</div>
+            <div class="metric-value color-white-bold">{d['rsi']:.1f}</div>
         </div>
         """, unsafe_allow_html=True)
 
-        # กล่องระบบป้องกันความเสี่ยง (เน้นสีม่วง/แดง)
+        # 3. การ์ดความเสี่ยง (SL/TP)
         st.markdown(f"""
-        <div class="glass-card">
-            <div class="metric-label" style="color: #b900ff;">🛡️ โซนความปลอดภัย (R:R 1:2)</div>
-            <div style="display: flex; justify-content: space-between; margin-top: 15px;">
-                <div>
-                    <div style="font-size: 0.8rem; color: #ef4444;">จุดตัดขาดทุน (SL)</div>
-                    <div style="font-size: 1.5rem; font-weight: 700; color: #fff;">{d['sl']:,.2f}</div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 0.8rem; color: #10b981;">เป้าหมายทำกำไร (TP)</div>
-                    <div style="font-size: 1.5rem; font-weight: 700; color: #fff;">{d['tp']:,.2f}</div>
-                </div>
+        <div class="glass-card" style="border-bottom: 3px solid #b900ff;">
+            <div class="metric-label color-purple sans-heading" style="margin-bottom: 10px;">🛡️ ระยะป้องกันความเสี่ยง (1:2)</div>
+            
+            <div style="margin-bottom: 8px;">
+                <span style="font-size: 0.9rem; color: #94a3b8; font-weight: 600;">จุดตัดขาดทุน (SL)</span><br/>
+                <span class="metric-value color-red" style="font-size: 2rem;">{d['sl']:,.2f}</span>
+            </div>
+            
+            <div>
+                <span style="font-size: 0.9rem; color: #94a3b8; font-weight: 600;">เป้าทำกำไร (TP)</span><br/>
+                <span class="metric-value color-green" style="font-size: 2rem;">{d['tp']:,.2f}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
     else:
-        # Placeholder ตอนยังไม่โหลดข้อมูล
+        # กรอบแสตนด์บายเมื่อยังไม่มีข้อมูล
         st.markdown("""
-        <div class="glass-card" style="opacity: 0.5; text-align: center; padding: 60px 20px;">
-            <div style="font-size: 2rem; margin-bottom: 15px;">📡</div>
-            <div class="metric-label">NO DATA SIGNAL</div>
-            <div style="font-size: 0.9rem; color: #64748b;">รอการเชื่อมต่อจากผู้ใช้งาน...</div>
+        <div class="glass-card" style="opacity: 0.4; text-align: center; padding: 80px 20px;">
+            <div style="font-size: 2.5rem; margin-bottom: 15px;">📊</div>
+            <div class="metric-label sans-heading">WAITING FOR SYNC...</div>
+            <div style="font-size: 0.95rem;">โปรดส่งคำสั่งอัปเดตข้อมูลจากแผงด้านซ้าย</div>
         </div>
         """, unsafe_allow_html=True)
