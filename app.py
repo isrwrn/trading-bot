@@ -69,7 +69,7 @@ JOURNAL_MAX = 500
 AI_HISTORY_MAX = 6
 
 # interval → (full-history period, delta period, max rows kept)
-FEEDS = {"1d": ("2y", "5d", 800), "1h": ("180d", "5d", 5000)}
+FEEDS = {"1d": ("5y", "5d", 1900), "1h": ("180d", "5d", 5000)}  # รายวัน 5 ปี = ตัวอย่างพอสำหรับ backtest
 FULL_RESYNC_SEC = 6 * 3600  # full re-download periodically (splits / adjustments)
 
 CYAN, GREEN, RED, PURPLE, AMBER = "#22D3EE", "#34D399", "#F87171", "#A78BFA", "#FBBF24"
@@ -110,15 +110,29 @@ DIR_TH = {"AUTO": "อัตโนมัติ", "LONG": "ซื้อ", "SHORT"
 SIDE_TH = {"LONG": "ฝั่งซื้อ", "SHORT": "ฝั่งขาย"}
 TF_TH = {"1D": "รายวัน", "4H": "4 ชั่วโมง", "1H": "1 ชั่วโมง"}
 SYNC_TH = {"FULL": "ดึงเต็ม", "DELTA": "ดึงเฉพาะแท่งใหม่", "STALE": "ใช้ข้อมูลเดิม"}
-TABS = [":material/space_dashboard: ภาพรวม", ":material/candlestick_chart: กราฟและอินดิเคเตอร์",
+TABS = [":material/space_dashboard: ภาพรวม", ":material/account_balance_wallet: พอร์ตจำลอง",
+        ":material/candlestick_chart: กราฟ", ":material/history: ทดสอบย้อนหลัง",
         ":material/radar: สแกนตลาด", ":material/smart_toy: ผู้ช่วย AI",
         ":material/menu_book: สมุดบันทึก", ":material/settings: ตั้งค่า"]
 
 JOURNAL_COLS = ["time_utc", "type", "ticker", "side", "entry", "sl", "tp", "rr", "score", "units", "status", "note"]
 JOURNAL_NUM = ["entry", "sl", "tp", "rr", "score", "units"]
-J_SETUP, J_AI, J_ALERT = "เซ็ตอัพ", "AI", "แจ้งเตือน"
+J_SETUP, J_AI, J_ALERT, J_PAPER = "เซ็ตอัพ", "AI", "แจ้งเตือน", "ไม้จำลอง"
 J_OPEN, J_WIN, J_LOSS = "เปิดอยู่", "ชนะ", "แพ้"
 JOURNAL_STATUS = [J_OPEN, J_WIN, J_LOSS, "เสมอทุน", "ข้าม", "—"]
+
+# พอร์ตจำลอง (paper trading)
+PAPER_MAX_OPEN = 50
+PAPER_KEEP = 300
+PAPER_COLS = ["id", "ticker", "name", "ccy", "side", "entry", "sl", "tp", "rr", "units", "stop_dist", "score",
+              "opened", "status", "exit", "closed", "r", "pnl", "reason"]
+PAPER_NUM = ["entry", "sl", "tp", "rr", "units", "stop_dist", "score", "exit", "r", "pnl"]
+PAPER_REASON = {"TP": "ถึงจุดทำกำไร", "SL": "ชนจุดตัดขาดทุน", "MANUAL": "ปิดเอง"}
+
+# ทดสอบย้อนหลัง (backtest) — ช่วงคะแนนเดียวกับที่แสดงในแดชบอร์ด
+BT_BUCKETS = [(0, 45, "ต่ำกว่า 45"), (45, 55, "45–54"), (55, 65, "55–64"), (65, 75, "65–74"), (75, 100, "75 ขึ้นไป")]
+BT_HORIZONS = [10, 20, 30, 60]
+BT_MIN_N = 20  # จำนวนตัวอย่างขั้นต่ำที่พอจะสรุปได้
 
 GLOSSARY = [
     ("RSI", "วัดแรงซื้อ–ขาย 0 ถึง 100 · ต่ำกว่า 30 = ถูกขายมากเกินไป · สูงกว่า 70 = ถูกซื้อมากเกินไป"),
@@ -130,6 +144,9 @@ GLOSSARY = [
     ("R:R", "อัตราส่วนความเสี่ยงต่อผลตอบแทน เช่น 1:2 = เสี่ยง 1 ส่วน หวังกำไร 2 ส่วน"),
     ("ความสอดคล้องหลายช่วงเวลา", "ดูแนวโน้มรายวัน 4 ชั่วโมง และ 1 ชั่วโมงพร้อมกัน ถ้าไปทางเดียวกันสัญญาณจะชัดกว่า"),
     ("ซื้อ (Long) / ขาย (Short)", "ซื้อ = ได้กำไรเมื่อราคาขึ้น · ขาย = ได้กำไรเมื่อราคาลง"),
+    ("R (หน่วยความเสี่ยง)", "วัดกำไรขาดทุนเทียบกับเงินที่ยอมเสี่ยง · +2R = ได้กำไร 2 เท่าของที่ยอมเสี่ยง · −1R = ขาดทุนเท่าที่ยอมเสี่ยง"),
+    ("ทดสอบย้อนหลัง (Backtest)", "จำลองว่าถ้าใช้สูตรนี้ในอดีต ผลจะเป็นอย่างไร — ใช้ตรวจว่าคะแนนความมั่นใจเชื่อถือได้แค่ไหน"),
+    ("พอร์ตจำลอง (Paper trading)", "ฝึกเทรดด้วยเงินสมมติ ระบบติดตามราคาจริงให้ว่าชนจุดทำกำไรหรือจุดตัดขาดทุน ไม่เสียเงินจริง"),
 ]
 AI_PRESETS = {
     "สรุปภาพรวม": "สรุปภาพรวม setup นี้ และประเมินความคุ้มค่าของ Risk:Reward",
@@ -196,6 +213,11 @@ def fmt_px(p) -> str:
     return f"{p:.8f}".rstrip("0").rstrip(".")
 
 
+def nz(x: float, nd: int = 2) -> float:
+    """ปัดเศษและตัด -0.00 (ติดลบจากเศษทศนิยมเล็ก ๆ) ให้เป็น 0"""
+    return round(float(x), nd) + 0.0
+
+
 def px_round(p: float) -> float:
     """ปัดราคาให้ตรงกับที่แสดง (ข้อมูลเก็บเป็น float32)"""
     a = abs(p)
@@ -230,6 +252,13 @@ def quote_ccy(t: str) -> str:
     if "-" in t:
         return t.rsplit("-", 1)[1]
     return "USD"
+
+
+TH_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
+
+
+def th_month(ts) -> str:
+    return f"{TH_MONTHS[ts.month - 1]} {ts.year}"
 
 
 def short_sym(t: str) -> str:
@@ -372,7 +401,7 @@ CSS = """
 
 /* 08 · เมนูแท็บ */
 .stTabs [role="tablist"]{gap:4px; border-bottom:1px solid var(--border); overflow-x:auto; scrollbar-width:none;}
-.stTabs [role="tab"]{padding:10px 16px !important; border-radius:12px 12px 0 0; margin:0 !important; flex:none; transition:background .15s ease;}
+.stTabs [role="tab"]{padding:10px 13px !important; border-radius:12px 12px 0 0; margin:0 !important; flex:none; transition:background .15s ease;}
 .stTabs [role="tab"]:hover{background:rgba(255,255,255,.03);}
 .stTabs [role="tab"] p{font-family:var(--f-head) !important; font-weight:400; font-size:.98rem !important; color:var(--muted); white-space:nowrap;}
 .stTabs [role="tab"][aria-selected="true"] p{color:var(--text) !important; font-weight:500;}
@@ -502,6 +531,28 @@ CSS = """
 .st-key-card_ai_out [data-testid="stMarkdownContainer"] p, .st-key-card_ai_out li{font-family:var(--f-body); font-size:1.02rem; line-height:1.85;}
 .foot{font-family:var(--f-body); font-size:.8rem; color:var(--dim); text-align:center; margin-top:36px; line-height:1.8;}
 
+/* พอร์ตจำลอง: แถบตำแหน่งราคาระหว่าง SL → TP */
+.pos-h{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;}
+.pos-t{font-family:var(--f-head); font-weight:500; font-size:1.05rem; color:var(--text); line-height:1.4;}
+.pos-s{font-family:var(--f-body); font-size:.84rem; color:var(--muted); margin-top:2px;}
+.pos-pl{text-align:right;}
+.pos-pl b{display:block; font-family:var(--f-head); font-weight:500; font-size:1.3rem; line-height:1.3; font-variant-numeric:tabular-nums;}
+.pos-pl span{font-family:var(--f-body); font-size:.84rem; color:var(--muted);}
+.ptrack{margin:16px 0 4px;}
+.ptrack-bar{position:relative; height:10px; border-radius:99px;}
+.ptrack-bar i{position:absolute; top:50%; transform:translate(-50%,-50%); border-radius:99px;}
+.pt-entry{width:2px; height:18px; background:rgba(255,255,255,.55);}
+.pt-now{width:14px; height:14px; background:var(--text); border:3px solid var(--bg); box-shadow:0 0 0 2px var(--cyan);}
+.ptrack-l{display:flex; justify-content:space-between; margin-top:8px; font-family:var(--f-body); font-size:.8rem; color:var(--muted);}
+.verdict{display:flex; gap:14px; align-items:flex-start; padding:16px 18px; border-radius:var(--r-md); margin-bottom:6px;
+  border:1px solid var(--border); background:rgba(255,255,255,.025);}
+.verdict .v-ic{font-size:1.6rem; line-height:1.2;}
+.verdict b{display:block; font-family:var(--f-head); font-weight:500; font-size:1.1rem; color:var(--text); line-height:1.45;}
+.verdict span{font-family:var(--f-body); font-size:.95rem; color:var(--text2); line-height:1.7;}
+.verdict.g{border-color:rgba(52,211,153,.4); background:rgba(52,211,153,.06);}
+.verdict.a{border-color:rgba(251,191,36,.4); background:rgba(251,191,36,.06);}
+.verdict.r{border-color:rgba(248,113,113,.4); background:rgba(248,113,113,.06);}
+
 /* 10 · responsive */
 @media (max-width:900px){
   .block-container{padding:1.2rem 1.2rem 3rem !important;}
@@ -612,6 +663,7 @@ def init_state():
         "lab": None,
         "ai_history": [],
         "journal": [], "journal_ver": 0,
+        "paper": [], "bt": None, "_paper_checked": 0.0,
     }
     for k, v in defaults.items():
         if k not in ss:
@@ -753,6 +805,7 @@ class _Entry:
     df: pd.DataFrame
     full_at: float
     touched: float
+    period: str = ""  # ช่วงประวัติที่ดึงเต็มไว้ — ถ้าตั้งค่าเปลี่ยน (เช่น 2y → 5y) จะดึงใหม่ทันที
 
 
 class OHLCVStore:
@@ -782,7 +835,7 @@ class OHLCVStore:
             with self._lock:
                 entry = self._data.get(key)
             now = time.time()
-            if entry is None or now - entry.full_at > FULL_RESYNC_SEC:
+            if entry is None or now - entry.full_at > FULL_RESYNC_SEC or getattr(entry, "period", "") != full_period:
                 df, mode, full_at = _download(ticker, interval, full_period), "FULL", now
             else:
                 try:
@@ -794,7 +847,7 @@ class OHLCVStore:
                 raise LookupError(f"ไม่พบข้อมูลตลาดของ {ticker} [{interval}]")
             df = df.iloc[-max_rows:]
             with self._lock:
-                self._data[key] = _Entry(df, full_at, now)
+                self._data[key] = _Entry(df, full_at, now, full_period)
                 self._data.move_to_end(key)
                 self.stats[mode.lower()] += 1
                 evicted = self._evict(now)
@@ -822,7 +875,8 @@ class OHLCVStore:
 
 @st.cache_resource(show_spinner=False)
 def ohlcv_store() -> OHLCVStore:
-    return OHLCVStore()
+    # แก้โค้ดบรรทัดนี้ = Streamlit สร้าง store ใหม่ทันทีหลัง deploy (schema 2: ประวัติรายวัน 5 ปี)
+    return OHLCVStore(max_entries=48, idle_ttl=4 * 3600)
 
 
 @st.cache_data(ttl=60, max_entries=96, show_spinner=False)
@@ -1120,6 +1174,109 @@ def corr_matrix(closes: pd.DataFrame, lookback: int) -> tuple[pd.DataFrame, int]
 
 
 # ==========================================
+# 7B. BACKTEST ENGINE (Phase 2 · ข้อ 2) — ตรวจว่าคะแนนความมั่นใจเชื่อถือได้แค่ไหน
+# ==========================================
+def daily_signals(df: pd.DataFrame, mode: str) -> pd.DataFrame:
+    """คะแนนความมั่นใจย้อนหลังทุกแท่งรายวัน (ใช้ข้อมูล ณ วันนั้นเท่านั้น — ไม่มองอนาคต)
+    สูตรเดียวกับ confidence() แต่ใช้เฉพาะปัจจัยรายวัน เพราะข้อมูล 4H/1H ย้อนหลังมีไม่ถึงปี"""
+    o, h, l, c, v = (df[k].astype("float64") for k in ("Open", "High", "Low", "Close", "Volume"))
+    e50, e200, r, a = ema(c, 50), ema(c, 200), rsi(c), atr(h, l, c)
+    rv = (v / v.shift(1).rolling(20).mean()).replace([np.inf, -np.inf], np.nan)
+    if mode == "LONG":
+        sgn = np.ones(len(c))
+    elif mode == "SHORT":
+        sgn = -np.ones(len(c))
+    else:
+        sgn = np.where(c >= e200, 1.0, -1.0)
+    bull = ((c > e50) & (e50 > e200)).to_numpy()
+    bear = ((c < e50) & (e50 < e200)).to_numpy()
+    trend = np.where((c - e200).to_numpy() * sgn > 0, 15, -15)
+    bias = np.where(np.where(sgn > 0, bull, bear), 6, np.where(np.where(sgn > 0, bear, bull), -6, 0))
+    rr_ = r.to_numpy()
+    rsi_pts = np.select([(rr_ >= 40) & (rr_ <= 60),
+                         ((rr_ < 30) & (sgn > 0)) | ((rr_ > 70) & (sgn < 0)),
+                         ((rr_ > 70) & (sgn > 0)) | ((rr_ < 30) & (sgn < 0))], [5, 10, -10], 0)
+    rv_ = rv.to_numpy()
+    rv_pts = np.select([rv_ >= 2, rv_ >= 1.5, rv_ >= 1.2, rv_ < 0.7], [12, 8, 4, -5], 0)  # NaN → 0
+    score = np.clip(50 + trend + bias + rsi_pts + rv_pts, 1, 99)
+    valid = (np.arange(len(c)) >= 200) & a.notna().to_numpy() & r.notna().to_numpy()
+    return pd.DataFrame({"open": o.to_numpy(), "high": h.to_numpy(), "low": l.to_numpy(), "close": c.to_numpy(),
+                         "atr": a.to_numpy(), "sgn": sgn, "score": score, "valid": valid}, index=df.index)
+
+
+@st.cache_data(ttl=600, max_entries=64, show_spinner=False)
+def backtest_asset(ticker: str, mode: str, sl_atr: float, rr: float, horizon: int) -> pd.DataFrame:
+    """จำลองการเข้าเทรดทุกวันในอดีต แล้วไล่แท่งถัดไปว่าชน TP หรือ SL ก่อน
+    กติกาแบบระมัดระวัง: ชนทั้งคู่ในแท่งเดียว = นับเป็น SL · ราคากระโดดทะลุ SL = ออกที่ราคาเปิด ·
+    ไม่ชนภายใน `horizon` วัน = ปิดที่ราคาปิดวันสุดท้าย"""
+    df, _, _ = get_ohlcv(ticker, "1d")
+    s = daily_signals(df, mode)
+    o, h, l, c = (s[k].to_numpy() for k in ("open", "high", "low", "close"))
+    a, sg, sc, ok = s["atr"].to_numpy(), s["sgn"].to_numpy(), s["score"].to_numpy(), s["valid"].to_numpy()
+    dates = (s.index.tz_localize(None) if s.index.tz is not None else s.index).normalize()
+    n, rows = len(s), []
+    for i in np.flatnonzero(ok):
+        end = i + horizon
+        if end >= n:
+            break  # สัญญาณล่าสุดยังไม่ครบกรอบเวลา — ไม่นับ
+        stop = sl_atr * a[i]
+        if not stop > 0:
+            continue
+        g, entry = sg[i], c[i]
+        sl, tp = entry - g * stop, entry + g * stop * rr
+        outcome, exit_px, j = "TIME", c[end], end
+        for k in range(i + 1, end + 1):
+            if (l[k] <= sl) if g > 0 else (h[k] >= sl):
+                outcome, exit_px, j = "SL", (min(sl, o[k]) if g > 0 else max(sl, o[k])), k
+                break
+            if (h[k] >= tp) if g > 0 else (l[k] <= tp):
+                outcome, exit_px, j = "TP", tp, k
+                break
+        rows.append((dates[i], dates[j], ticker, int(g), int(sc[i]), entry, exit_px, outcome, j - i,
+                     (exit_px - entry) * g / stop, i, j))
+    return pd.DataFrame(rows, columns=["date", "exit_date", "ticker", "sgn", "score", "entry", "exit",
+                                       "outcome", "days", "r", "i", "j"])
+
+
+def bt_buckets(tr: pd.DataFrame) -> pd.DataFrame:
+    out = []
+    for lo, hi, label in BT_BUCKETS:
+        sub = tr[(tr["score"] >= lo) & (tr["score"] < hi)]
+        n = len(sub)
+        out.append({"ช่วงคะแนน": label, "จำนวน": n,
+                    "ถึง TP %": (sub["outcome"] == "TP").mean() * 100 if n else np.nan,
+                    "ชน SL %": (sub["outcome"] == "SL").mean() * 100 if n else np.nan,
+                    "หมดเวลา %": (sub["outcome"] == "TIME").mean() * 100 if n else np.nan,
+                    "เฉลี่ยต่อไม้ (R)": sub["r"].mean() if n else np.nan,
+                    "รวม (R)": sub["r"].sum() if n else np.nan})
+    return pd.DataFrame(out)
+
+
+def bt_equity(tr: pd.DataFrame, threshold: int) -> pd.DataFrame:
+    """ถือได้ทีละ 1 ไม้ต่อสินทรัพย์ (ไม่ซ้อนไม้) — เข้าเฉพาะสัญญาณที่คะแนน ≥ threshold"""
+    taken = []
+    for _, g in tr.sort_values("i").groupby("ticker"):
+        last_exit = -1
+        for row in g.itertuples(index=False):
+            if row.score >= threshold and row.i >= last_exit:
+                taken.append(row)
+                last_exit = row.j
+    if not taken:
+        return pd.DataFrame(columns=list(tr.columns) + ["cum_r"])
+    eq = pd.DataFrame(taken).sort_values("exit_date").reset_index(drop=True)
+    eq["cum_r"] = eq["r"].cumsum()
+    return eq
+
+
+def bt_bucket_of(score: int) -> tuple[int, int, str]:
+    return next(b for b in BT_BUCKETS if b[0] <= score < b[1] or (b[1] == 100 and score >= b[0]))
+
+
+def bt_key(tickers: list[str], mode: str, sl_atr: float, rr: float, horizon: int) -> tuple:
+    return tuple(tickers), mode, float(sl_atr), float(rr), int(horizon)
+
+
+# ==========================================
 # 8. PLOTLY CHARTS (#9 · #12)
 # ==========================================
 AXIS = dict(gridcolor="rgba(255,255,255,0.05)", zerolinecolor="rgba(255,255,255,0.08)", linecolor="rgba(255,255,255,0.10)",
@@ -1224,6 +1381,57 @@ def chart_corr(corr: pd.DataFrame) -> go.Figure:
     fig.update_layout(hovermode="closest")
     fig.update_xaxes(showspikes=False, showgrid=False)
     fig.update_yaxes(showspikes=False, showgrid=False, autorange="reversed", side="left")
+    return fig
+
+
+def chart_bt_winrate(b: pd.DataFrame, breakeven: float) -> go.Figure:
+    b = b[b["จำนวน"] > 0]
+    colors = [GREEN if w >= breakeven else RED for w in b["ถึง TP %"]]
+    fig = go.Figure(go.Bar(
+        x=b["ช่วงคะแนน"], y=b["ถึง TP %"], marker_color=colors, marker_line_width=0, opacity=0.85,
+        text=[f"{w:.0f}%<br><span style='font-size:11px'>n={n}</span>" for w, n in zip(b["ถึง TP %"], b["จำนวน"])],
+        textposition="auto", insidetextanchor="end", textfont=dict(color="#F4F8FC"), cliponaxis=False,
+        hovertemplate="คะแนน %{x}<br>ถึง TP %{y:.1f}%<extra></extra>"))
+    fig.add_hline(y=breakeven, line=dict(color=AMBER, width=1.5, dash="dash"),
+                  annotation_text=f"จุดคุ้มทุน {breakeven:.0f}%", annotation_position="top right",
+                  annotation_font=dict(family=BODY_FONT, color=AMBER, size=12))
+    hud_layout(fig, 320, legend=False)
+    fig.update_layout(hovermode="closest", bargap=0.35, margin=dict(l=4, r=4, t=24, b=4))
+    fig.update_xaxes(showspikes=False, title=dict(text="ช่วงคะแนนความมั่นใจ", font=dict(size=12)))
+    fig.update_yaxes(showspikes=False, ticksuffix="%",
+                     range=[0, min(100, max(50, breakeven + 15, float(b["ถึง TP %"].max() or 0) + 15))])
+    return fig
+
+
+def chart_bt_avg_r(b: pd.DataFrame) -> go.Figure:
+    b = b[b["จำนวน"] > 0]
+    vals = b["เฉลี่ยต่อไม้ (R)"]
+    fig = go.Figure(go.Bar(
+        x=b["ช่วงคะแนน"], y=vals, marker_color=[GREEN if v >= 0 else RED for v in vals], marker_line_width=0,
+        opacity=0.85, text=[f"{v:+.2f}R" for v in vals], textposition="outside", cliponaxis=False,
+        hovertemplate="คะแนน %{x}<br>เฉลี่ย %{y:+.2f}R ต่อไม้<extra></extra>"))
+    fig.add_hline(y=0, line=dict(color="rgba(255,255,255,0.25)", width=1))
+    hud_layout(fig, 320, legend=False)
+    lim = max(0.5, float(vals.abs().max() or 0) * 1.35)
+    fig.update_layout(hovermode="closest", bargap=0.35, margin=dict(l=4, r=4, t=24, b=4))
+    fig.update_xaxes(showspikes=False, title=dict(text="ช่วงคะแนนความมั่นใจ", font=dict(size=12)))
+    fig.update_yaxes(showspikes=False, ticksuffix="R", range=[-lim, lim])
+    return fig
+
+
+def chart_equity(curves: list[tuple[str, pd.DataFrame, str]], height: int = 360) -> go.Figure:
+    """เส้นผลตอบแทนสะสม (หน่วย R) — curves = [(ชื่อ, df ที่มี exit_date/cum_r, สี)]"""
+    fig = go.Figure()
+    for name, eq, color in curves:
+        if eq.empty:
+            continue
+        fig.add_trace(go.Scatter(x=eq["exit_date"], y=eq["cum_r"], name=name, mode="lines",
+                                 line=dict(color=color, width=2.2, shape="hv"),
+                                 hovertemplate=f"{name}<br>%{{x|%Y-%m-%d}}<br>สะสม %{{y:+.1f}}R<extra></extra>"))
+    fig.add_hline(y=0, line=dict(color="rgba(255,255,255,0.2)", width=1))
+    hud_layout(fig, height)
+    fig.update_layout(hovermode="x unified")
+    fig.update_yaxes(ticksuffix="R")
     return fig
 
 
@@ -1336,12 +1544,12 @@ def dispatch(text: str, discord_url: str) -> tuple[bool, str]:
         return False, type(e).__name__
 
 
-def journal_add(kind: str, scan: dict, sig: dict | None, note: str = ""):
+def journal_add(kind: str, scan: dict, sig: dict | None, note: str = "", pid: str | None = None):
     ss = st.session_state
-    row = {"time_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"), "type": kind,
+    row = {"time_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"), "type": kind, "pid": pid,
            "ticker": scan["ticker"], "side": SIDE_TH[sig["direction"]] if sig else "", "entry": None, "sl": None,
            "tp": None, "rr": None, "score": None, "units": None,
-           "status": J_OPEN if kind == J_SETUP else "—", "note": note[:300]}
+           "status": J_OPEN if kind in (J_SETUP, J_PAPER) else "—", "note": note[:300]}
     if sig:
         row.update(entry=px_round(sig["entry"]), sl=px_round(sig["sl"]), tp=px_round(sig["tp"]), rr=sig["rr"],
                    score=sig["score"], units=sig["units"])
@@ -1360,7 +1568,7 @@ def _apply_journal_edits(editor_key: str):
 
 
 def journal_csv(rows: list[dict]) -> bytes:
-    df = pd.DataFrame(rows, columns=JOURNAL_COLS)
+    df = pd.DataFrame(rows, columns=JOURNAL_COLS + ["pid"])  # pid = ลิงก์กับไม้จำลอง
     for col in ("type", "ticker", "side", "status", "note"):  # กัน CSV formula injection ตอนเปิดใน Excel
         df[col] = df[col].astype(str).map(lambda s: "'" + s if s[:1] in ("=", "+", "-", "@") else s)
     return df.to_csv(index=False).encode("utf-8-sig")
@@ -1373,10 +1581,145 @@ def journal_from_csv(upload) -> list[dict]:
     rows = []
     for rec in df.to_dict("records"):
         row = {c: clean_text(str(rec.get(c, "")).lstrip("'"), 300) for c in JOURNAL_COLS}
+        row["pid"] = re.sub(r"[^0-9a-f]", "", str(rec.get("pid", "")))[:8] or None
         for c in JOURNAL_NUM:
             v = pd.to_numeric(row[c], errors="coerce")
             row[c] = None if pd.isna(v) else float(v)
         rows.append(row)
+    return rows
+
+
+# ==========================================
+# 10B. PAPER TRADING (Phase 2 · ข้อ 3) — ไม้จำลอง ติดตามราคาจริงให้อัตโนมัติ
+# ==========================================
+def paper_open(scan: dict, sig: dict) -> str | None:
+    """เปิดไม้จำลองตามแผนปัจจุบัน — คืนข้อความ error ถ้าเปิดไม่ได้"""
+    ss = st.session_state
+    if sig["units"] <= 0:
+        return "ขนาดไม้เป็น 0 — เพิ่มเงินทุนหรือ % ความเสี่ยงก่อน"
+    if sum(p["status"] == "OPEN" for p in ss.paper) >= PAPER_MAX_OPEN:
+        return f"เปิดไม้จำลองพร้อมกันได้สูงสุด {PAPER_MAX_OPEN} ไม้"
+    pid = pysecrets.token_hex(4)
+    ss.paper.insert(0, {
+        "id": pid, "ticker": scan["ticker"], "name": asset_meta(scan["ticker"])["name"], "ccy": scan["ccy"],
+        "side": sig["direction"], "entry": px_round(sig["entry"]), "sl": px_round(sig["sl"]),
+        "tp": px_round(sig["tp"]), "rr": sig["rr"], "units": sig["units"], "stop_dist": sig["stop_dist"],
+        "score": sig["score"], "opened": time.time(), "status": "OPEN", "exit": None, "closed": None,
+        "r": None, "pnl": None, "reason": "", "last": sig["entry"]})
+    del ss.paper[PAPER_KEEP:]
+    journal_add(J_PAPER, scan, sig, f"เปิดไม้จำลอง #{pid}", pid=pid)
+    return None
+
+
+def paper_close(p: dict, exit_px: float, when: float, reason: str):
+    g = 1 if p["side"] == "LONG" else -1
+    r = (exit_px - p["entry"]) * g / p["stop_dist"] if p["stop_dist"] else 0.0
+    p.update(status="CLOSED", exit=float(exit_px), closed=float(when), reason=reason, r=float(r),
+             pnl=float((exit_px - p["entry"]) * g * p["units"]), last=float(exit_px))
+    ss = st.session_state
+    for row in ss.journal:  # อัปเดตผลในสมุดบันทึกให้อัตโนมัติ
+        if row.get("pid") == p["id"]:
+            row["status"] = J_WIN if r > 0.05 else (J_LOSS if r < -0.05 else "เสมอทุน")
+            row["note"] = clean_text(f"{row['note']} → {PAPER_REASON[reason]} {fmt_px(exit_px)} ({r:+.2f}R)", 300)
+            ss.journal_ver += 1
+            break
+
+
+def _first_hit(frame: pd.DataFrame, p: dict) -> tuple[float, float, str] | None:
+    """หาแท่งแรกหลังเวลาเปิดไม้ที่ชน TP หรือ SL (ชนทั้งคู่ในแท่งเดียว = SL · กระโดดทะลุ SL = ออกที่ราคาเปิด)"""
+    bars = frame[frame.index > pd.Timestamp(p["opened"], unit="s", tz="UTC")]
+    if bars.empty:
+        return None
+    g = 1 if p["side"] == "LONG" else -1
+    o, h, l = (bars[k].to_numpy(dtype="float64") for k in ("Open", "High", "Low"))
+    sl_hit = (l <= p["sl"]) if g > 0 else (h >= p["sl"])
+    tp_hit = (h >= p["tp"]) if g > 0 else (l <= p["tp"])
+    i_sl = int(np.argmax(sl_hit)) if sl_hit.any() else len(bars)
+    i_tp = int(np.argmax(tp_hit)) if tp_hit.any() else len(bars)
+    if i_sl == i_tp == len(bars):
+        return None
+    if i_sl <= i_tp:
+        px = min(p["sl"], o[i_sl]) if g > 0 else max(p["sl"], o[i_sl])
+        return float(px), bars.index[i_sl].timestamp(), "SL"
+    return float(p["tp"]), bars.index[i_tp].timestamp(), "TP"
+
+
+def paper_update(force: bool = False) -> list[str]:
+    """ตรวจไม้จำลองที่เปิดอยู่ทุก 30 วินาที (หรือเมื่อสั่ง) — ใช้แท่ง 1 ชม. เพื่อความแม่นยำ"""
+    ss = st.session_state
+    now = time.time()
+    if not force and now - ss.get("_paper_checked", 0.0) < 30:
+        return []
+    ss["_paper_checked"] = now
+    opened = [p for p in ss.paper if p["status"] == "OPEN"]
+    events = []
+    for t in sorted({p["ticker"] for p in opened}):
+        frames = {}
+        for iv in ("1h", "1d"):
+            try:
+                frames[iv] = get_ohlcv(t, iv)[0]
+            except Exception:
+                pass
+        if not frames:
+            continue
+        latest = frames.get("1h", frames.get("1d"))
+        for p in (x for x in opened if x["ticker"] == t):
+            h1 = frames.get("1h")
+            frame = h1 if h1 is not None and len(h1) and h1.index[0].timestamp() <= p["opened"] else frames.get("1d")
+            if frame is None or frame.empty:
+                continue
+            p["last"] = float(latest["Close"].iloc[-1])
+            hit = _first_hit(frame, p)
+            if hit:
+                paper_close(p, *hit)
+                events.append(f"ไม้จำลอง {p['ticker']} {PAPER_REASON[hit[2]]} ({p['r']:+.2f}R)")
+    return events
+
+
+def _paper_iso(ts) -> str:
+    try:
+        ts = float(ts)
+    except (TypeError, ValueError):
+        return ""
+    return datetime.fromtimestamp(ts, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if np.isfinite(ts) and ts > 0 else ""
+
+
+def paper_csv(rows: list[dict]) -> bytes:
+    df = pd.DataFrame(rows, columns=PAPER_COLS)
+    df["opened"] = df["opened"].map(_paper_iso)
+    df["closed"] = df["closed"].map(_paper_iso)
+    for col in ("ticker", "name", "reason"):  # กัน CSV formula injection
+        df[col] = df[col].astype(str).map(lambda s: "'" + s if s[:1] in ("=", "+", "-", "@") else s)
+    return df.to_csv(index=False).encode("utf-8-sig")
+
+
+def paper_from_csv(upload) -> list[dict]:
+    df = pd.read_csv(upload, dtype=str, nrows=PAPER_KEEP, encoding="utf-8-sig").fillna("")
+    need = {"id", "ticker", "side", "entry", "sl", "tp", "stop_dist", "opened", "status"}
+    if not need.issubset(df.columns):
+        raise ValueError("ไฟล์ไม่ใช่พอร์ตจำลองของ TOOLNOVA")
+    rows = []
+    for rec in df.to_dict("records"):
+        t = clean_ticker(str(rec.get("ticker", "")).lstrip("'"))
+        side = str(rec.get("side", "")).upper()
+        status = str(rec.get("status", "")).upper()
+        if not t or side not in ("LONG", "SHORT") or status not in ("OPEN", "CLOSED"):
+            continue
+        p = {c: clean_text(str(rec.get(c, "")).lstrip("'"), 80) for c in PAPER_COLS}
+        for c in PAPER_NUM:
+            v = pd.to_numeric(p[c], errors="coerce")
+            p[c] = None if pd.isna(v) else float(v)
+        if None in (p["entry"], p["sl"], p["tp"], p["stop_dist"]):
+            continue
+        opened = pd.to_datetime(rec.get("opened"), utc=True, errors="coerce")
+        closed = pd.to_datetime(rec.get("closed"), utc=True, errors="coerce")
+        if pd.isna(opened):
+            continue
+        p.update(id=re.sub(r"[^0-9a-f]", "", p["id"])[:8] or pysecrets.token_hex(4), ticker=t, side=side,
+                 status=status, opened=opened.timestamp(), closed=None if pd.isna(closed) else closed.timestamp(),
+                 reason=p["reason"] if p["reason"] in PAPER_REASON else "", ccy=p["ccy"] or quote_ccy(t),
+                 name=p["name"] or t, last=p["exit"] or p["entry"])
+        rows.append(p)
     return rows
 
 
@@ -1648,7 +1991,10 @@ def view_overview(cfg: dict, scan: dict | None, sig: dict | None):
     # แถวที่ 3 · สรุปแบบเข้าใจง่าย + แนวโน้ม 3 ช่วงเวลา
     s1, s2 = st.columns([1.65, 1], gap="medium")
     with s1:
-        rows = "".join(f'<div class="sum-row">{dot(t)}<p>{txt}</p></div>' for t, txt in plain_summary(scan, sig))
+        items = plain_summary(scan, sig)
+        if (ev := bt_evidence(cfg, scan["ticker"], sig["score"])) is not None:
+            items.append(ev)
+        rows = "".join(f'<div class="sum-row">{dot(t)}<p>{txt}</p></div>' for t, txt in items)
         html_block(f'<div class="card">{card_head("สรุปแบบเข้าใจง่าย", "แปลตัวเลขทางเทคนิคเป็นภาษาคน")}{rows}'
                    f'<div class="note">สรุปจากสูตรคำนวณอัตโนมัติ ไม่ใช่คำแนะนำการลงทุน</div></div>')
     with s2:
@@ -1677,7 +2023,9 @@ def view_overview(cfg: dict, scan: dict | None, sig: dict | None):
             show_chart(chart_rr(scan["frames"]["1D"], sig), "rr_chart")
     with c2:
         with st.container(key="card_plan"):
-            html_block(card_head("แผนการเทรด", f"{side}{' (เลือกอัตโนมัติ)' if sig['auto'] else ''}"))
+            n_open = sum(1 for p in ss.paper if p["status"] == "OPEN" and p["ticker"] == scan["ticker"])
+            html_block(card_head("แผนการเทรด", f"{side}{' (เลือกอัตโนมัติ)' if sig['auto'] else ''}",
+                                 right=chip(f"ไม้จำลองเปิดอยู่ {n_open}", "p") if n_open else ""))
             lot_note = {100: "ปัดเป็นล็อต 100 หุ้น (SET)", 1: "ปัดเป็นจำนวนหุ้นเต็ม", None: "ซื้อเป็นเศษได้"}[sig["lot"]]
             lev = sig["leverage"]
             lev_txt = (f"<span class='t-r'>{lev:.2f} เท่า (เกินเงินทุน)</span>" if lev > 1
@@ -1696,6 +2044,13 @@ def view_overview(cfg: dict, scan: dict | None, sig: dict | None):
                            f"{fmt_units(sig['cap_units'], sig['lot'])} หน่วย]")
             if sig["units"] == 0:
                 st.caption(":orange[ขนาดไม้ปัดลงเหลือ 0 — เงินทุนหรือความเสี่ยงต่ำกว่าล็อตขั้นต่ำ]")
+            if st.button("เปิดไม้จำลองตามแผนนี้", icon=":material/play_arrow:", type="primary", width="stretch",
+                         key="paper_open", help="ฝึกเทรดด้วยเงินสมมติ ระบบจะติดตามราคาจริงให้ว่าชน TP หรือ SL"):
+                if (err := paper_open(scan, sig)) is None:
+                    st.toast("เปิดไม้จำลองแล้ว — ดูผลได้ที่เมนูพอร์ตจำลอง", icon="🧪")
+                    st.rerun()
+                else:
+                    st.toast(err, icon="⚠️")
             b1, b2 = st.columns(2)
             if b1.button("บันทึก", icon=":material/bookmark_add:", width="stretch", key="log_setup",
                          help="บันทึกแผนนี้ลงสมุดบันทึก"):
@@ -1894,10 +2249,335 @@ def view_ai(cfg: dict, scan: dict | None, sig: dict | None):
                     st.markdown(body)
 
 
+# ---- ทดสอบย้อนหลัง (Phase 2 · ข้อ 2) ----
+def bt_evidence(cfg: dict, ticker: str, score: int) -> tuple[str, str] | None:
+    """ประโยคหลักฐานจาก backtest สำหรับการ์ดสรุป — แสดงเฉพาะเมื่อทดสอบด้วยค่าตั้งเดียวกัน"""
+    bt = st.session_state.bt
+    if not bt or ticker not in bt["key"][0] or bt["trades"].empty:
+        return None
+    if bt["key"][1:4] != (cfg["direction"], float(cfg["sl_atr"]), float(cfg["rr"])):
+        return None
+    lo, hi, label = bt_bucket_of(score)
+    tr = bt["trades"]
+    sub = tr[(tr["ticker"] == ticker) & (tr["score"] >= lo) & (tr["score"] < hi)]
+    if len(sub) < 10:
+        return "m", f"ผลทดสอบย้อนหลัง: ช่วงคะแนน {label} มีตัวอย่างแค่ {len(sub)} ครั้ง — ยังสรุปไม่ได้"
+    win, avg = (sub["outcome"] == "TP").mean() * 100, sub["r"].mean()
+    tone = "g" if avg > 0 else "r"
+    return tone, (f"ผลทดสอบย้อนหลัง: เมื่อคะแนนอยู่ช่วง <b>{label}</b> ราคาถึงจุดทำกำไร <b>{win:.0f}%</b> "
+                  f"จาก {len(sub)} ครั้ง (เฉลี่ย <b>{avg:+.2f}R</b> ต่อไม้)")
+
+
+def bt_verdict(tr: pd.DataFrame, thr: int, rr: float) -> tuple[str, str, str, str]:
+    hi = tr[tr["score"] >= thr]
+    n, avg_all = len(hi), tr["r"].mean()
+    if n < BT_MIN_N:
+        return ("a", "🤔", "ตัวอย่างยังน้อยเกินไปที่จะสรุป",
+                f"มีสัญญาณที่คะแนน ≥ {thr} แค่ {n} ครั้ง — ลองลดเกณฑ์คะแนน เพิ่มจำนวนวันถือ หรือทดสอบกับรายการโปรดทั้งหมด")
+    avg_hi = hi["r"].mean()
+    if avg_hi > 0 and avg_hi >= avg_all + 0.05:
+        return ("g", "✅", "คะแนนสูงให้ผลดีกว่าจริงในอดีต",
+                f"เมื่อคะแนน ≥ {thr} ได้เฉลี่ย {avg_hi:+.2f}R ต่อไม้ ดีกว่าการเข้าทุกสัญญาณ ({avg_all:+.2f}R)")
+    if avg_hi > 0:
+        return ("a", "➖", "ได้กำไร แต่คะแนนยังคัดกรองได้ไม่มาก",
+                f"คะแนน ≥ {thr} ได้เฉลี่ย {avg_hi:+.2f}R ต่อไม้ ใกล้เคียงกับการเข้าทุกสัญญาณ ({avg_all:+.2f}R)")
+    return ("r", "⚠️", "คะแนนสูงยังไม่ได้ผลในอดีต",
+            f"เมื่อคะแนน ≥ {thr} เฉลี่ย {avg_hi:+.2f}R ต่อไม้ (ขาดทุน) — ควรปรับสูตรคะแนนหรือค่าตั้งก่อนใช้กับสินทรัพย์นี้")
+
+
+def view_backtest(cfg: dict):
+    ss = st.session_state
+    with st.container(key="card_bt_ctrl"):
+        html_block(card_head("ทดสอบย้อนหลัง (Backtest)",
+                             "ย้อนดูข้อมูลรายวันสูงสุด 5 ปี: ทุกวันในอดีต ถ้าเข้าเทรดตามแผนของระบบ ราคาจะไปถึงจุดทำกำไร"
+                             "ก่อนจุดตัดขาดทุนไหม — เพื่อดูว่าคะแนนความมั่นใจเชื่อถือได้แค่ไหน"))
+        c1, c2, c3 = st.columns([1.3, 1.2, 1.4], vertical_alignment="bottom", gap="medium")
+        scope = c1.segmented_control("ทดสอบกับ", ["ONE", "FAVS"], default="ONE", key="bt_scope", persist_state="page",
+                                     format_func={"ONE": "สินทรัพย์นี้", "FAVS": "รายการโปรดทั้งหมด"}.get,
+                                     width="stretch") or "ONE"
+        horizon = c2.select_slider("ถือไม้ไม่เกิน (วัน)", BT_HORIZONS, value=20, key="bt_h", persist_state="page",
+                                   help="ถ้าครบจำนวนวันแล้วยังไม่ชน TP หรือ SL จะปิดที่ราคาปิดของวันสุดท้าย")
+        with c3:
+            params = (chip(f"ตัดขาดทุน {cfg['sl_atr']:g}×ATR") + chip(f"R:R 1:{cfg['rr']:g}")
+                      + chip(f"ทิศทาง {DIR_TH[cfg['direction']]}"))
+            html_block(f'<div class="card-s" style="margin-bottom:6px">ใช้ค่าจากแถบซ้าย › ตั้งค่าขั้นสูง</div>'
+                       f'<div class="asset-meta">{params}</div>')
+        run = st.button("เริ่มทดสอบ", icon=":material/play_arrow:", type="primary", key="bt_run", width="stretch")
+
+    tickers = [cfg["ticker"]] if scope == "ONE" else list(ss.favs)
+    key = bt_key(tickers, cfg["direction"], cfg["sl_atr"], cfg["rr"], horizon)
+    if run:
+        if (wait := cooldown("bt", 8)) > 0:
+            st.toast(f"กดถี่เกินไป · รออีก {wait:.0f} วินาที", icon="⏳")
+        else:
+            ph, log, frames = st.empty(), [], []
+            for t in tickers:
+                log.append(f"จำลองการเทรด {t}")
+                ph.markdown(loading_html("ผลย้อนหลัง", log[-6:] + ["กำลังคำนวณ…"]), unsafe_allow_html=True)
+                try:
+                    frames.append(backtest_asset(t, cfg["direction"], float(cfg["sl_atr"]), float(cfg["rr"]), int(horizon)))
+                except RateLimited as e:
+                    st.error(f"ถูกจำกัดความถี่ · {e}")
+                    break
+                except Exception as e:
+                    log.append(f"{t} · ข้อมูลไม่พอ ({type(e).__name__})")
+            ph.empty()
+            trades = pd.concat([f for f in frames if not f.empty], ignore_index=True) if any(
+                not f.empty for f in frames) else pd.DataFrame(columns=["date", "exit_date", "ticker", "sgn", "score",
+                                                                        "entry", "exit", "outcome", "days", "r", "i", "j"])
+            ss.bt = {"key": key, "trades": trades, "at": time.time()}
+
+    bt = ss.bt
+    if not bt:
+        empty_state("🧪", "ยังไม่ได้ทดสอบ", "เลือกขอบเขตแล้วกด <b>เริ่มทดสอบ</b> — ใช้เวลาไม่กี่วินาที")
+        return
+    if bt["key"] != key:
+        html_block('<div class="banner">ค่าที่ตั้งไว้เปลี่ยนไปจากตอนทดสอบ (สินทรัพย์ · ระยะตัดขาดทุน · R:R · ทิศทาง · '
+                   'จำนวนวัน) — กด <b>เริ่มทดสอบ</b> อีกครั้งเพื่ออัปเดตผล</div>')
+    tr = bt["trades"]
+    if len(tr) < 5:
+        empty_state("📉", "ข้อมูลไม่พอสำหรับทดสอบ", "ต้องมีราคาย้อนหลังมากกว่า 200 วันทำการ")
+        return
+    rr = bt["key"][3]
+    be = 100 / (1 + rr)
+    n_assets = tr["ticker"].nunique()
+    period = f"{th_month(tr['date'].min())} – {th_month(tr['date'].max())}"
+
+    with st.container(key="card_bt_thr"):
+        t1, t2 = st.columns([2, 1.3], vertical_alignment="center", gap="medium")
+        with t1:
+            html_block(card_head("ผลการทดสอบ", f"{len(tr):,} สัญญาณ · {n_assets} สินทรัพย์ · {period} · "
+                                                f"ถือไม่เกิน {bt['key'][4]} วัน"))
+        with t2:
+            thr = st.select_slider("เข้าเทรดเฉพาะเมื่อคะแนนอย่างน้อย", [50, 55, 60, 65, 70, 75, 80], value=65,
+                                   key="bt_thr", persist_state="page",
+                                   help="ลองเลื่อนดูว่าถ้าเลือกเข้าเฉพาะคะแนนสูง ๆ ผลจะดีขึ้นไหม")
+        tone, icon, title, detail = bt_verdict(tr, thr, rr)
+        hi = tr[tr["score"] >= thr]
+        win_all = (tr["outcome"] == "TP").mean() * 100
+        win_hi = (hi["outcome"] == "TP").mean() * 100 if len(hi) else float("nan")
+        corr = tr["score"].corr(tr["r"]) if tr["score"].nunique() > 1 else float("nan")
+        extra = [f"ด้วย R:R 1:{rr:g} ต้องถึงจุดทำกำไรมากกว่า <b>{be:.0f}%</b> ของครั้งจึงจะคุ้มทุน (ยังไม่รวมค่าธรรมเนียม)"]
+        if np.isfinite(corr):
+            extra.append(f"ความสัมพันธ์ระหว่างคะแนนกับผลลัพธ์ <b>{corr:+.2f}</b> "
+                         f"({'บวก = คะแนนสูงมักได้ผลดีกว่า' if corr > 0.02 else 'ใกล้ศูนย์หรือติดลบ = คะแนนยังแยกผลดี/ร้ายไม่ออก'})")
+        html_block(f'<div class="verdict {tone}"><div class="v-ic">{icon}</div><div><b>{esc(title)}</b>'
+                   f'<span>{esc(detail)}</span></div></div>'
+                   + "".join(f'<div class="sum-row">{dot("c")}<p>{x}</p></div>' for x in extra))
+
+    k1, k2, k3, k4 = st.columns(4, gap="medium")
+    with k1:
+        html_block(kpi("สัญญาณที่ทดสอบ", f"{len(tr):,}", f"คะแนน ≥ {thr}: {len(hi):,} ครั้ง", tone="c",
+                       tip="ทุกวันที่มีข้อมูลครบ (หลังวันที่ 200) นับเป็น 1 สัญญาณ"))
+    with k2:
+        html_block(kpi("ถึงจุดทำกำไร · ทุกสัญญาณ", f"{win_all:.0f}<small>%</small>",
+                       chip(f"คุ้มทุนที่ {be:.0f}%", "a"), tone="a"))
+    with k3:
+        html_block(kpi(f"ถึงจุดทำกำไร · คะแนน ≥ {thr}", f"{win_hi:.0f}<small>%</small>" if len(hi) else "—",
+                       chip(f"{win_hi - win_all:+.0f} จุดจากทุกสัญญาณ", "g" if win_hi >= win_all else "r")
+                       if len(hi) else "ไม่มีสัญญาณ", tone="g" if len(hi) and win_hi >= be else "r"))
+    with k4:
+        avg_hi = hi["r"].mean() if len(hi) else float("nan")
+        html_block(kpi("เฉลี่ยต่อสัญญาณ (คะแนน ≥ " + str(thr) + ")", f"{avg_hi:+.2f}<small>R</small>" if len(hi) else "—",
+                       f"ทุกสัญญาณ {tr['r'].mean():+.2f}R", tone="g" if len(hi) and avg_hi > 0 else "r",
+                       tip="เฉลี่ยจากทุกวันที่เป็นสัญญาณ (วันติดกันนับซ้ำได้) · R = หน่วยความเสี่ยง · "
+                           "+1R = ได้กำไรเท่ากับเงินที่ยอมเสี่ยง"))
+
+    b = bt_buckets(tr)
+    g1, g2 = st.columns(2, gap="medium")
+    with g1:
+        with st.container(key="card_bt_win"):
+            html_block(card_head("ถึงจุดทำกำไรกี่ % ในแต่ละช่วงคะแนน",
+                                 "แท่งควรสูงขึ้นเมื่อคะแนนสูงขึ้น · เส้นประ = จุดคุ้มทุน"))
+            show_chart(chart_bt_winrate(b, be), "bt_win")
+    with g2:
+        with st.container(key="card_bt_avg"):
+            html_block(card_head("ได้เฉลี่ยกี่ R ต่อไม้ในแต่ละช่วงคะแนน", "เหนือศูนย์ = ได้กำไรโดยเฉลี่ย"))
+            show_chart(chart_bt_avg_r(b), "bt_avg")
+
+    eq_all, eq_hi = bt_equity(tr, 0), bt_equity(tr, thr)
+    with st.container(key="card_bt_eq"):
+        final = lambda e: (f"{e['cum_r'].iloc[-1]:+.1f}R จาก {len(e)} ไม้ (เฉลี่ย {e['r'].mean():+.2f}R)"
+                           if len(e) else "ไม่มีไม้")
+        html_block(card_head("ผลตอบแทนสะสม ถ้าเทรดจริงตามสัญญาณ",
+                             f"ถือได้ทีละ 1 ไม้ต่อสินทรัพย์ (ไม่นับวันที่ถือไม้อยู่ จึงต่างจากค่าเฉลี่ยต่อสัญญาณด้านบน) · "
+                             f"เข้าทุกสัญญาณ {final(eq_all)} · เฉพาะคะแนน ≥ {thr} {final(eq_hi)}"))
+        show_chart(chart_equity([("เข้าทุกสัญญาณ", eq_all, "#8395AF"), (f"คะแนน ≥ {thr}", eq_hi, CYAN)]), "bt_eq")
+
+    with st.expander("ตารางผลตามช่วงคะแนน และรายการเทรดจำลอง"):
+        st.dataframe(b, hide_index=True, column_config={
+            "ถึง TP %": st.column_config.NumberColumn(format="%.0f%%"),
+            "ชน SL %": st.column_config.NumberColumn(format="%.0f%%"),
+            "หมดเวลา %": st.column_config.NumberColumn(format="%.0f%%"),
+            "เฉลี่ยต่อไม้ (R)": st.column_config.NumberColumn(format="%+.2f"),
+            "รวม (R)": st.column_config.NumberColumn(format="%+.1f")})
+        if len(eq_hi):
+            show = eq_hi.tail(30).iloc[::-1]
+            st.dataframe(pd.DataFrame({
+                "วันที่เข้า": show["date"].dt.strftime("%Y-%m-%d"), "สินทรัพย์": show["ticker"],
+                "ฝั่ง": np.where(show["sgn"] > 0, "ซื้อ", "ขาย"), "คะแนน": show["score"],
+                "จุดเข้า": show["entry"], "ออกที่": show["exit"],
+                "ผล": show["outcome"].map({"TP": "ถึงจุดทำกำไร", "SL": "ชนจุดตัดขาดทุน", "TIME": "หมดเวลา"}),
+                "ถือ (วัน)": show["days"], "R": show["r"]}), hide_index=True, column_config={
+                "จุดเข้า": st.column_config.NumberColumn(format="%.4f"),
+                "ออกที่": st.column_config.NumberColumn(format="%.4f"),
+                "R": st.column_config.NumberColumn(format="%+.2f")})
+    html_block('<div class="note">ข้อจำกัด: ใช้เฉพาะปัจจัยรายวัน (ไม่รวม 4 ชม./1 ชม. เพราะข้อมูลย้อนหลังมีไม่ถึงปี) · '
+               'ไม่รวมค่าธรรมเนียมและ slippage · ชนทั้ง TP และ SL ในวันเดียวกันนับเป็นขาดทุน · '
+               'สัญญาณวันติดกันอาจซ้อนกัน · ผลในอดีตไม่รับประกันอนาคต</div>')
+
+
+# ---- พอร์ตจำลอง (Phase 2 · ข้อ 3) ----
+def pos_track(p: dict) -> str:
+    span = p["tp"] - p["sl"]  # ใช้ได้ทั้งซื้อและขาย: SL อยู่ซ้าย TP อยู่ขวาเสมอ
+
+    def frac(x: float) -> float:
+        return min(100.0, max(0.0, (x - p["sl"]) / span * 100)) if span else 50.0
+
+    e, c = frac(p["entry"]), frac(p["last"])
+    bg = f"linear-gradient(90deg, rgba(248,113,113,.38) 0 {e:.1f}%, rgba(52,211,153,.34) {e:.1f}% 100%)"
+    return (f'<div class="ptrack"><div class="ptrack-bar" style="background:{bg}">'
+            f'<i class="pt-entry" style="left:{e:.1f}%"></i><i class="pt-now" style="left:{c:.1f}%"></i></div>'
+            f'<div class="ptrack-l"><span class="t-r">SL {fmt_px(p["sl"])}</span>'
+            f'<span>จุดเข้า {fmt_px(p["entry"])} · ตอนนี้ {fmt_px(p["last"])}</span>'
+            f'<span class="t-g">TP {fmt_px(p["tp"])}</span></div></div>')
+
+
+def _paper_check_now():
+    if cooldown("paper_check", 5) > 0:
+        st.session_state["_flash"] = "เพิ่งตรวจไปเมื่อสักครู่ — รออีกไม่กี่วินาที"
+        return
+    events = paper_update(force=True)
+    st.session_state["_flash"] = " · ".join(events) if events else "ตรวจแล้ว — ยังไม่มีไม้ไหนชน TP หรือ SL"
+
+
+def _paper_close_manual(pid: str):
+    for p in st.session_state.paper:
+        if p["id"] == pid and p["status"] == "OPEN":
+            paper_close(p, p["last"], time.time(), "MANUAL")
+            st.session_state["_flash"] = f"ปิดไม้จำลอง {p['ticker']} แล้ว ({p['r']:+.2f}R)"
+
+
+def _paper_clear():
+    st.session_state.paper = []
+
+
+def view_paper(cfg: dict):
+    ss = st.session_state
+    with st.container(key="card_paper_top"):
+        h1, h2 = st.columns([2.4, 1], vertical_alignment="center", gap="medium")
+        with h1:
+            html_block(card_head("พอร์ตจำลอง (Paper trading)",
+                                 "ฝึกเทรดด้วยเงินสมมติ · ระบบตรวจราคาจริงทุก 30 วินาทีว่าชนจุดทำกำไรหรือจุดตัดขาดทุน · "
+                                 "ถ้าชนทั้งคู่ในแท่งเดียวกันนับเป็นขาดทุน"))
+        with h2:
+            st.button("ตรวจราคาตอนนี้", icon=":material/sync:", key="paper_check", on_click=_paper_check_now,
+                      width="stretch", disabled=not any(p["status"] == "OPEN" for p in ss.paper))
+
+    open_p = [p for p in ss.paper if p["status"] == "OPEN"]
+    closed_p = [p for p in ss.paper if p["status"] == "CLOSED"]
+    wins = sum(1 for p in closed_p if p["r"] > 0.05)
+    losses = sum(1 for p in closed_p if p["r"] < -0.05)
+    total_r = nz(sum(p["r"] for p in closed_p))
+    unreal_r = nz(sum((p["last"] - p["entry"]) * (1 if p["side"] == "LONG" else -1) / p["stop_dist"]
+                      for p in open_p if p["stop_dist"]))
+    pnl_ccy: dict[str, float] = {}
+    for p in closed_p:
+        pnl_ccy[p["ccy"]] = pnl_ccy.get(p["ccy"], 0.0) + (p["pnl"] or 0.0)
+    pnl_chips = "".join(chip(f"{v:+,.2f} {esc(k)}", "g" if v >= 0 else "r") for k, v in pnl_ccy.items()) or "ยังไม่มีไม้ที่ปิด"
+
+    k1, k2, k3, k4 = st.columns(4, gap="medium")
+    with k1:
+        html_block(kpi("ไม้ที่เปิดอยู่", str(len(open_p)), f"ยังไม่รับรู้ {unreal_r:+.2f}R", tone="c",
+                       tip="กำไร/ขาดทุนที่ยังไม่รับรู้ คำนวณจากราคาล่าสุด"))
+    with k2:
+        html_block(kpi("ปิดแล้ว", str(len(closed_p)), f"{chip(f'ชนะ {wins}', 'g')}{chip(f'แพ้ {losses}', 'r')}", tone="p"))
+    with k3:
+        closed_n = wins + losses
+        html_block(kpi("อัตราชนะ", f"{wins / closed_n * 100:.0f}<small>%</small>" if closed_n else "—",
+                       f"จากไม้ที่ปิดแล้ว {closed_n} ไม้", tone="a"))
+    with k4:
+        html_block(kpi("ผลรวมไม้ที่ปิดแล้ว", f"{total_r:+.2f}<small>R</small>", pnl_chips,
+                       tone="g" if total_r >= 0 else "r", tip="R = หน่วยความเสี่ยง · แยกกำไร/ขาดทุนตามสกุลเงินของสินทรัพย์"))
+
+    if not ss.paper:
+        empty_state("🧪", "ยังไม่มีไม้จำลอง",
+                    "ไปที่เมนู <b>ภาพรวม</b> แล้วกด <b>เปิดไม้จำลองตามแผนนี้</b><br>"
+                    "ระบบจะติดตามราคาจริงและบันทึกผลชนะ/แพ้ลงสมุดบันทึกให้อัตโนมัติ")
+    if open_p:
+        sec("ไม้ที่เปิดอยู่", f"{len(open_p)} ไม้ · เรียงจากล่าสุด")
+        for p in open_p:
+            g = 1 if p["side"] == "LONG" else -1
+            r_now = nz((p["last"] - p["entry"]) * g / p["stop_dist"]) if p["stop_dist"] else 0.0
+            pnl = nz((p["last"] - p["entry"]) * g * p["units"])
+            pl_cls = "t-g" if pnl > 0 else ("t-r" if pnl < 0 else "")
+            opened = ago(datetime.fromtimestamp(p["opened"], timezone.utc))
+            units_chip = chip(fmt_units(p["units"], lot_size(p["ticker"])) + " หน่วย")
+            with st.container(key=f"card_pos_{p['id']}"):
+                c1, c2 = st.columns([5, 1], vertical_alignment="center", gap="medium")
+                with c1:
+                    html_block(f'<div class="pos-h"><div><div class="pos-t">{esc(p["name"])}</div>'
+                               f'<div class="asset-meta">{chip(esc(p["ticker"]), "c")}{chip(SIDE_TH[p["side"]], "p")}'
+                               f'{chip("เปิดเมื่อ " + esc(opened))}{units_chip}</div></div>'
+                               f'<div class="pos-pl"><b class="{pl_cls}">{pnl:+,.2f} {esc(p["ccy"])}</b>'
+                               f'<span>{r_now:+.2f}R · คะแนนตอนเปิด {int(p["score"] or 0)}</span></div></div>{pos_track(p)}')
+                with c2:
+                    st.button("ปิดไม้", icon=":material/close:", key=f"close_{p['id']}", width="stretch",
+                              on_click=_paper_close_manual, args=(p["id"],), help="ปิดที่ราคาล่าสุด")
+    if closed_p:
+        sec("ประวัติไม้ที่ปิดแล้ว", f"{len(closed_p)} ไม้")
+        d1, d2 = st.columns([1.5, 1], gap="medium")
+        with d1:
+            with st.container(key="card_paper_hist"):
+                hist = pd.DataFrame({
+                    "ปิดเมื่อ": [datetime.fromtimestamp(p["closed"], timezone.utc).strftime("%Y-%m-%d %H:%M") for p in closed_p],
+                    "สินทรัพย์": [p["ticker"] for p in closed_p], "ฝั่ง": [SIDE_TH[p["side"]] for p in closed_p],
+                    "จุดเข้า": [p["entry"] for p in closed_p], "ออกที่": [p["exit"] for p in closed_p],
+                    "ผล": [PAPER_REASON.get(p["reason"], p["reason"]) for p in closed_p],
+                    "R": [p["r"] for p in closed_p],
+                    "กำไร/ขาดทุน": [f"{p['pnl']:+,.2f} {p['ccy']}" for p in closed_p]})
+                st.dataframe(hist, hide_index=True, column_config={
+                    "จุดเข้า": st.column_config.NumberColumn(format="%.4f"),
+                    "ออกที่": st.column_config.NumberColumn(format="%.4f"),
+                    "R": st.column_config.NumberColumn(format="%+.2f")})
+        with d2:
+            with st.container(key="card_paper_eq"):
+                html_block(card_head("ผลสะสม (R)", "เรียงตามเวลาที่ปิดไม้"))
+                eq = pd.DataFrame({"exit_date": [datetime.fromtimestamp(p["closed"], timezone.utc) for p in closed_p],
+                                   "r": [p["r"] for p in closed_p]}).sort_values("exit_date")
+                eq["cum_r"] = eq["r"].cumsum()
+                show_chart(chart_equity([("พอร์ตจำลอง", eq, CYAN)], height=280), "paper_eq")
+
+    with st.container(key="card_paper_io"):
+        html_block(card_head("เก็บและกู้คืนพอร์ต", "พอร์ตจำลองอยู่ในเซสชันนี้เท่านั้น — ดาวน์โหลดไว้ แล้วกู้คืนภายหลังได้ "
+                                                   "ระบบจะตรวจย้อนหลังให้ว่าช่วงที่ไม่ได้เปิดดู ราคาชน TP/SL หรือยัง"))
+        a1, a2, a3 = st.columns(3, vertical_alignment="bottom")
+        a1.download_button("ดาวน์โหลดพอร์ต (CSV)", paper_csv(ss.paper), icon=":material/download:",
+                           file_name=f"toolnova_paper_{datetime.now(timezone.utc):%Y%m%d_%H%M}.csv", mime="text/csv",
+                           width="stretch", disabled=not ss.paper, key="paper_export")
+        with a2.popover("กู้คืนพอร์ต", icon=":material/upload:", width="stretch"):
+            up = st.file_uploader("ไฟล์พอร์ตจำลอง (CSV)", type=["csv"], key="paper_upload")
+            if up is not None and st.button("กู้คืน", key="paper_restore", width="stretch"):
+                try:
+                    if up.size > 1_000_000:
+                        raise ValueError("ไฟล์ใหญ่เกิน 1 MB")
+                    ss.paper = paper_from_csv(up)
+                    for p in ss.paper:
+                        ss.meta.setdefault(p["ticker"], {"name": p["name"], "exch": "", "type": ""})
+                    events = paper_update(force=True)
+                    ss["_flash"] = f"กู้คืน {len(ss.paper)} ไม้" + (f" · {' · '.join(events)}" if events else "")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"กู้คืนไม่สำเร็จ · {safe_err(e)}")
+        with a3.popover("ล้างพอร์ตจำลอง", icon=":material/delete:", width="stretch", disabled=not ss.paper):
+            st.caption("ลบไม้จำลองทั้งหมด (สมุดบันทึกยังอยู่) — ย้อนกลับไม่ได้")
+            st.button("ยืนยันล้างพอร์ต", key="paper_clear", on_click=_paper_clear, width="stretch")
+
+
 def view_journal():
     ss = st.session_state
     rows = ss.journal
-    setups = [r for r in rows if r["type"] == J_SETUP]
+    setups = [r for r in rows if r["type"] in (J_SETUP, J_PAPER)]
     wins = sum(r["status"] == J_WIN for r in setups)
     losses = sum(r["status"] == J_LOSS for r in setups)
     closed = wins + losses
@@ -2039,7 +2719,7 @@ def view_settings():
             if not secured and get_secret("GEMINI_API_KEY"):
                 st.caption(":orange[⚠ มี GEMINI_API_KEY ใน Secrets แต่ยังไม่ได้ตั้ง APP_PASSWORD — ใครมีลิงก์ก็ใช้คีย์คุณได้]")
         with st.container(key="card_set_kill"):
-            html_block(card_head("ปุ่มฉุกเฉิน (Kill-Switch)", "ล้างแคชทั้งหมดและรีเซ็ตเซสชัน — รายการโปรด สมุดบันทึก "
+            html_block(card_head("ปุ่มฉุกเฉิน (Kill-Switch)", "ล้างแคชทั้งหมดและรีเซ็ตเซสชัน — รายการโปรด สมุดบันทึก พอร์ตจำลอง "
                                                               "ประวัติ AI และคีย์ที่กรอกในเซสชันจะหายทั้งหมด"))
             with st.popover("ล้างระบบทั้งหมด", icon=":material/warning:", width="stretch", key="kill_pop"):
                 st.caption("ยืนยันหรือไม่? การกระทำนี้ย้อนกลับไม่ได้")
@@ -2067,12 +2747,17 @@ _have = ss_.scan is not None and ss_.scan["ticker"] == cfg["ticker"]
 if _force or (not _have and ss_.scan_attempt != cfg["ticker"]):
     handle_scan(cfg["ticker"], force=_force)
 
+# ตรวจไม้จำลองที่เปิดอยู่ (ทุก 30 วินาที) — แจ้งเตือนทันทีเมื่อชน TP/SL ไม่ว่าอยู่หน้าไหน
+for _ev in paper_update():
+    st.toast(_ev, icon="🧪")
+
 scan = ss_.scan if ss_.scan is not None and ss_.scan["ticker"] == cfg["ticker"] else None
 signal = build_signal(scan, cfg["direction"], cfg["sl_atr"], cfg["rr"], cfg["capital"], cfg["risk_pct"]) if scan else None
 
 # stateful tabs: คงแท็บเดิมหลัง rerun และ render เฉพาะแท็บที่เปิดอยู่ (ประหยัด CPU/RAM)
-VIEWS = [lambda: view_overview(cfg, scan, signal), lambda: view_chart(cfg, scan, signal), lambda: view_scan(cfg),
-         lambda: view_ai(cfg, scan, signal), view_journal, view_settings]
+VIEWS = [lambda: view_overview(cfg, scan, signal), lambda: view_paper(cfg), lambda: view_chart(cfg, scan, signal),
+         lambda: view_backtest(cfg), lambda: view_scan(cfg), lambda: view_ai(cfg, scan, signal),
+         view_journal, view_settings]
 for tab, view in zip(st.tabs(TABS, key="main_tab", on_change="rerun"), VIEWS):
     with tab:
         if tab.open is not False:
