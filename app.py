@@ -61,7 +61,7 @@ def ask_veteran(market_data: dict, user_intent: str):
     3. แผน Action ที่ต้องทำทันที พร้อมจุดเสี่ยงที่ต้องระวัง
     """
     try:
-        model = genai.GenerativeModel("gemini-pro")
+        model = genai.GenerativeModel("gemini-1.5-flash")
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
