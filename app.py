@@ -2,11 +2,11 @@
 TOOLNOVA · Quant Terminal — Phase 1 (items 1–30)
 
 HUD command-center UI · multi-timeframe quant engine · risk sizing · news feed ·
-Gemini strategy core · trade journal · correlation matrix · Telegram/Discord alerts.
+Gemini strategy core · trade journal · correlation matrix · Discord alerts.
 
 Secrets (Streamlit Cloud › App settings › Secrets, or .streamlit/secrets.toml):
     APP_PASSWORD, GEMINI_API_KEY, GEMINI_MODEL,
-    TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, DISCORD_WEBHOOK_URL   (all optional)
+    DISCORD_WEBHOOK_URL   (all optional)
 """
 from __future__ import annotations
 
@@ -67,8 +67,6 @@ MONO = "JetBrains Mono, Noto Sans Thai, monospace"
 
 TICKER_RE = re.compile(r"[A-Z0-9^][A-Z0-9.\-=^]{0,14}")
 GEMINI_KEY_RE = r"[A-Za-z0-9_\-]{30,80}"
-TG_TOKEN_RE = r"\d{5,12}:[A-Za-z0-9_\-]{30,60}"
-TG_CHAT_RE = re.compile(r"-?\d{4,20}|@[A-Za-z0-9_]{5,32}")
 DISCORD_RE = r"https://(?:ptb\.|canary\.)?discord(?:app)?\.com/api/webhooks/\d{10,25}/[A-Za-z0-9_\-]{20,100}"
 CTRL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f​-‏‪-‮]")
 
@@ -1148,24 +1146,13 @@ def alert_text(scan: dict, sig: dict) -> str:
     ])
 
 
-def dispatch(text: str, tg_token: str, tg_chat: str, discord_url: str) -> list[tuple[str, bool, str]]:
-    results = []
-    if tg_token and tg_chat:
-        try:
-            r = requests.post(f"https://api.telegram.org/bot{tg_token}/sendMessage",
-                              json={"chat_id": tg_chat, "text": text, "disable_web_page_preview": True}, timeout=8)
-            info = "" if r.ok else f"HTTP {r.status_code} {r.json().get('description', '')[:80]}"
-            results.append(("TELEGRAM", r.ok, info))
-        except Exception as e:  # ไม่โชว์ str(e) เพราะ URL มี bot token
-            results.append(("TELEGRAM", False, type(e).__name__))
-    if discord_url:
-        try:
-            r = requests.post(discord_url, json={"content": text[:1900], "username": "TOOLNOVA"},
-                              timeout=8, allow_redirects=False)
-            results.append(("DISCORD", r.status_code in (200, 204), f"HTTP {r.status_code}"))
-        except Exception as e:
-            results.append(("DISCORD", False, type(e).__name__))
-    return results
+def dispatch(text: str, discord_url: str) -> tuple[bool, str]:
+    try:
+        r = requests.post(discord_url, json={"content": text[:1900], "username": "TOOLNOVA"},
+                          timeout=8, allow_redirects=False)
+        return r.status_code in (200, 204), f"HTTP {r.status_code}"
+    except Exception as e:  # ไม่โชว์ str(e) เพราะ URL มี webhook token
+        return False, type(e).__name__
 
 
 def journal_add(kind: str, scan: dict, sig: dict | None, note: str = ""):
@@ -1369,11 +1356,7 @@ def render_sidebar() -> dict:
 
         sec("ACCESS KEYS")
         api_key = secret_field("GEMINI API KEY", "GEMINI_API_KEY", "gemini", GEMINI_KEY_RE, "AIza…")
-        with st.expander("ALERT CHANNELS · TELEGRAM / DISCORD"):
-            tg_token = secret_field("TELEGRAM BOT TOKEN", "TELEGRAM_BOT_TOKEN", "tg", TG_TOKEN_RE, "123456:ABC…")
-            tg_chat = get_secret("TELEGRAM_CHAT_ID") or st.text_input("TELEGRAM CHAT ID", key="tg_chat",
-                                                                        placeholder="-100123… หรือ @channel")
-            tg_chat = tg_chat.strip() if tg_chat and TG_CHAT_RE.fullmatch(tg_chat.strip()) else ""
+        with st.expander("ALERT CHANNEL · DISCORD"):
             discord = secret_field("DISCORD WEBHOOK", "DISCORD_WEBHOOK_URL", "discord", DISCORD_RE,
                                    "https://discord.com/api/webhooks/…")
 
@@ -1394,7 +1377,7 @@ def render_sidebar() -> dict:
 
     return {"ticker": ticker, "capital": capital, "risk_pct": risk_pct, "sl_atr": sl_atr, "rr": rr,
             "direction": direction, "run": run, "api_key": api_key,
-            "tg_token": tg_token, "tg_chat": tg_chat, "discord": discord}
+            "discord": discord}
 
 
 # ==========================================
@@ -1525,13 +1508,13 @@ def view_command(cfg: dict, scan: dict | None, sig: dict | None):
         journal_add("SETUP", scan, sig, "manual log")
         st.toast("บันทึกลง TRADE JOURNAL แล้ว", icon="📓")
     if a2.button("⚡ DISPATCH ALERT", width="stretch", key="dispatch"):
-        if not ((cfg["tg_token"] and cfg["tg_chat"]) or cfg["discord"]):
-            st.toast("ยังไม่มีช่องทางแจ้งเตือน — ตั้งค่าใน sidebar › ALERT CHANNELS", icon="⚠️")
+        if not cfg["discord"]:
+            st.toast("ยังไม่ได้ตั้ง Discord webhook — ตั้งค่าใน sidebar › ALERT CHANNEL", icon="⚠️")
         elif (wait := cooldown("dispatch", 15)) > 0:
             st.toast(f"THROTTLED · รออีก {wait:.0f}s", icon="⏳")
         else:
-            for name, ok, info in dispatch(alert_text(scan, sig), cfg["tg_token"], cfg["tg_chat"], cfg["discord"]):
-                st.toast(f"{name} · {'DELIVERED' if ok else 'FAILED ' + info}", icon="✅" if ok else "⚠️")
+            ok, info = dispatch(alert_text(scan, sig), cfg["discord"])
+            st.toast(f"DISCORD · {'DELIVERED' if ok else 'FAILED ' + info}", icon="✅" if ok else "⚠️")
             journal_add("ALERT", scan, sig, "dispatched")
     age = int(time.time() - scan["at"])
     sync = " · ".join(f"{k} {v}" for k, v in scan["sync"].items())
