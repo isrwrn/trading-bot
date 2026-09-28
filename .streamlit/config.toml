@@ -14,9 +14,9 @@ yellowColor = "#FFB020"
 violetColor = "#B45CFF"
 baseRadius = "none"
 showWidgetBorder = true
-font = "'Noto Sans Thai':https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap, sans-serif"
-headingFont = "Orbitron:https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap, 'Noto Sans Thai', sans-serif"
-codeFont = "'JetBrains Mono':https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap, monospace"
+# หัวข้อ = sans-serif (Chakra Petch) · เนื้อหา = serif (Noto Serif Thai)
+font = "'Noto Serif Thai':https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;500;600;700&display=swap, serif"
+headingFont = "'Chakra Petch':https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap, sans-serif"
 
 [theme.sidebar]
 backgroundColor = "#070B14"
