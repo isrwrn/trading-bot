@@ -135,24 +135,27 @@ def scan_market(ticker):
         delta = c.diff()
         rsi = (100 - (100 / (1 + ((delta.where(delta > 0, 0)).rolling(14).mean() / (-delta.where(delta < 0, 0)).rolling(14).mean())))).iloc[-1]
         atr = pd.concat([h-l, (h-c.shift()).abs(), (l-c.shift()).abs()], axis=1).max(axis=1).rolling(14).mean().iloc[-1]
-        avg_vol = v.rolling(20).mean().iloc[-1]
-        rvol = v.iloc[-1] / avg_vol if avg_vol > 0 else 1
+        
+        # ป้องกันกรณีกราฟสั้นเกินไปจนคำนวณ Volume เฉลี่ยไม่ได้
+        avg_vol = v.rolling(20).mean().iloc[-1] if len(v) >= 20 else v.mean()
+        rvol = v.iloc[-1] / avg_vol if avg_vol > 0 else 1.0
         
         last = c.iloc[-1]
         
-        # คำนวณ Confidence Score เบื้องต้น (เต็ม 100)
+        # คำนวณ Confidence Score (0-100)
         score = 50
         if last > ema200: score += 20
         if 40 <= rsi <= 60: score += 10
-        elif rsi < 30: score += 20 # โซนสะสม
-        if rvol > 1.2: score += 10 # มีวอลุ่มสนับสนุน
+        elif rsi < 30: score += 20
+        if rvol > 1.2: score += 10
         
         return {
             "ticker": ticker, "price": float(last), "ema200": float(ema200),
-            "rsi": float(rsi), "atr": float(atr), "rvol": float(rvol), "score": min(score, 99),
+            "rsi": float(rsi), "atr": float(atr), "rvol": float(rvol), "score": int(min(score, 99)),
             "sl": float(last - (1.5 * atr)), "tp": float(last + (3.0 * atr))
         }
-    except: return None
+    except Exception as e: 
+        return None
 
 def analyze_with_ai(data, prompt_text, api_key, risk_data):
     genai.configure(api_key=api_key)
@@ -213,7 +216,8 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-if st.session_state.market_data:
+# เช็กความพร้อมของข้อมูลว่ามีคีย์ครบถ้วนหรือไม่ ป้องกัน KeyError
+if st.session_state.market_data and isinstance(st.session_state.market_data, dict) and 'score' in st.session_state.market_data:
     d = st.session_state.market_data
     is_bullish = d['price'] > d['ema200']
     
@@ -317,10 +321,12 @@ if st.session_state.market_data:
         st.markdown("</div>", unsafe_allow_html=True)
 
 else:
+    # เคลียร์ค่า state ที่พังทิ้งอัตโนมัติหากพบข้อผิดพลาด
+    st.session_state.market_data = None
     st.markdown("""
     <div class="crisp-card" style="text-align: center; padding: 120px 20px;">
         <div style="font-size: 3rem; margin-bottom: 20px; color: #334155;">🛡️</div>
         <div class="data-value" style="color: #64748B;">SYSTEM IDLE</div>
-        <div style="color: #475569; margin-top: 10px; font-weight: 500;">Please configure API and select target asset from the sidebar.</div>
+        <div style="color: #475569; margin-top: 10px; font-weight: 500;">Please configure API and click 'RUN DIAGNOSTIC' from the sidebar.</div>
     </div>
     """, unsafe_allow_html=True)
