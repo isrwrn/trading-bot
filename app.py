@@ -5,87 +5,86 @@ import numpy as np
 import google.generativeai as genai
 
 # ==========================================
-# [ลำดับที่ 8, 10] กำหนดเลย์เอาต์พื้นฐาน
+# 1. ตั้งค่าหน้าเว็บให้เต็มจอและสะอาดตา
 # ==========================================
-st.set_page_config(page_title="VETERAN // COMMAND CENTER", layout="wide", page_icon="🛰️")
+st.set_page_config(page_title="Veteran Quant Advisor", layout="wide", page_icon="🏛️")
 
 # ==========================================
-# [ลำดับที่ 1-7] ระบบ Custom CSS Theme Engine สไตล์ Sci-Fi
+# 2. Premium UX/UI CSS (Smooth & Clean)
 # ==========================================
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap');
+    /* นำเข้าฟอนต์ Inter ที่เน้นความสะอาดตาและอ่านง่าย */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
     
-    /* พื้นหลังและฟอนต์หลัก */
     html, body, [class*="css"] {
-        font-family: 'Share Tech Mono', monospace !important;
-        background-color: #0a0a0a !important;
-        color: #00FF41 !important; /* สีเขียว Cyberpunk */
+        font-family: 'Inter', sans-serif !important;
     }
     
-    /* หัวข้อและ Tab */
-    h1, h2, h3, .stTabs [data-baseweb="tab-list"] {
-        font-family: 'Orbitron', sans-serif !important;
-        color: #00FFFF !important; /* สีฟ้า Neon */
-        text-shadow: 0 0 10px #00FFFF;
+    /* ปรับแต่งกล่อง Metric (ตัวเลข) ให้เป็น Card ขอบมนสบายตา */
+    div[data-testid="metric-container"] {
+        background-color: #1a1c24 !important; /* สีพื้นหลัง Card โทนพรีเมียม */
+        border: 1px solid #2b2d36 !important;
+        padding: 15px 20px !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        transition: transform 0.2s ease;
+    }
+    div[data-testid="metric-container"]:hover {
+        transform: translateY(-2px); /* เอฟเฟกต์ยกตัวเมื่อเอาเมาส์ชี้ */
+        border: 1px solid #3d404d !important;
     }
     
-    /* กล่องข้อความและตัวเลือก */
-    .stTextInput > div > div > input, .stSelectbox > div > div > div {
-        color: #00FF41 !important;
-        background-color: #111 !important;
-        border: 1px solid #00FF41 !important;
-        border-radius: 0px !important; /* กล่องเหลี่ยมล้ำอนาคต */
-    }
-    
-    /* ปุ่มกด Sci-Fi Action */
+    /* ปรับแต่งปุ่มกด (Psychological Action) */
     .stButton > button {
-        background-color: transparent !important;
-        color: #FF003C !important;
-        border: 1px solid #FF003C !important;
-        box-shadow: 0 0 8px #FF003C !important;
-        font-family: 'Orbitron', sans-serif !important;
-        border-radius: 0px !important;
-        transition: all 0.3s ease;
-        width: 100%;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        border: none !important;
+        background-color: #262730 !important;
+        transition: all 0.2s ease-in-out !important;
+        padding: 10px 24px !important;
     }
     .stButton > button:hover {
-        background-color: #FF003C !important;
-        color: #fff !important;
-        box-shadow: 0 0 20px #FF003C !important;
+        background-color: #3b3c46 !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        transform: scale(1.02); /* ขยายเล็กน้อยดึงดูดการกด */
     }
     
-    /* กรอบ Metric Data (HUD) */
-    div[data-testid="stMetricValue"] {
-        color: #00FFFF !important;
-        font-size: 28px !important;
-        text-shadow: 0 0 5px #00FFFF;
+    /* ปุ่ม Primary Action (ขอคำแนะนำ) เน้นสีให้แตกต่าง */
+    div:nth-child(2) > div > button {
+        background-color: #0068c9 !important; /* สีน้ำเงิน Trust & Security */
+        color: white !important;
     }
-    div[data-testid="stMetricLabel"] {
-        color: #888 !important;
-        font-family: 'Orbitron', sans-serif !important;
+    div:nth-child(2) > div > button:hover {
+        background-color: #0052a3 !important;
+    }
+    
+    /* ปรับแต่ง Input Fields ให้ขอบมน */
+    .stTextInput > div > div > input, .stSelectbox > div > div > div {
+        border-radius: 8px !important;
+    }
+    
+    /* เส้นคั่นบางๆ สบายตา */
+    hr {
+        border-color: #2b2d36 !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# [ลำดับที่ 21] ระบบรักษาความปลอดภัย API Key
+# 3. จัดการ Data & API แบบซ่อนรูปและมีประสิทธิภาพ
 # ==========================================
-st.sidebar.markdown("### 🔐 SYSTEM OVERRIDE")
-st.sidebar.caption("SECURE CONNECTION INITIALIZED.")
-GEMINI_API_KEY = st.sidebar.text_input("ENTER GEMINI API KEY", type="password")
+st.sidebar.markdown("### ⚙️ Settings")
+GEMINI_API_KEY = st.sidebar.text_input("Gemini API Key", type="password", placeholder="Enter your key here...")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
+st.sidebar.caption("Your API key is masked and secured locally.")
 
-# ==========================================
-# [ลำดับที่ 26, 28] Smart Data Caching ลดการดึงข้อมูลซ้ำ
-# ==========================================
-@st.cache_data(ttl=300) # แคชข้อมูลไว้ 5 นาที (300 วินาที) ไม่ต้องโหลดใหม่ทุกครั้งที่กดปุ่ม
+@st.cache_data(ttl=300, show_spinner=False)
 def fetch_and_calc(ticker: str):
     try:
         data = yf.download(ticker, period="6mo", interval="1d", progress=False)
-        if data.empty or len(data) < 50:
-            return None
+        if data.empty or len(data) < 50: return None
         
         close = data['Close'][ticker] if isinstance(data.columns, pd.MultiIndex) else data['Close']
         high = data['High'][ticker] if isinstance(data.columns, pd.MultiIndex) else data['High']
@@ -100,109 +99,92 @@ def fetch_and_calc(ticker: str):
 
         tr = pd.concat([high - low, (high - close.shift()).abs(), (low - close.shift()).abs()], axis=1).max(axis=1)
         atr = tr.rolling(14).mean().iloc[-1]
-
         last_price = close.iloc[-1]
+
         return {
-            "ticker": ticker,
-            "price": float(last_price),
-            "ema200": float(ema200),
-            "rsi": float(rsi),
-            "atr": float(atr),
-            "sl": float(last_price - (1.5 * atr)),
-            "tp": float(last_price + (3.0 * atr))
+            "ticker": ticker, "price": float(last_price), "ema200": float(ema200),
+            "rsi": float(rsi), "atr": float(atr), 
+            "sl": float(last_price - (1.5 * atr)), "tp": float(last_price + (3.0 * atr))
         }
-    except Exception as e:
+    except:
         return None
 
 def ask_veteran(market_data: dict, user_intent: str):
     prompt = f"""
-    คุณคือหัวหน้านักกลยุทธ์การลงทุนอาวุโส (Senior Quant Trader) ประสบการณ์ 25 ปีในวอลล์สตรีท
-    จงประเมินข้อมูลอย่างดุดัน ไร้อารมณ์ และปฏิเสธความเสี่ยง หากเงื่อนไขไม่ 100% ให้สั่ง NO TRADE
-
-    [DATA UPLINK]: {market_data['ticker']}
-    - CURRENT PRICE: {market_data['price']:.2f}
-    - EMA(200) TREND: {market_data['ema200']:.2f}
-    - RSI(14) MOMENTUM: {market_data['rsi']:.2f}
-    - ATR VOLATILITY: {market_data['atr']:.2f}
-    - AUTO STOP-LOSS: {market_data['sl']:.2f}
-    - AUTO TAKE-PROFIT: {market_data['tp']:.2f}
-
-    [USER COMMAND]: "{user_intent}"
-
-    จงตอบกลับด้วยรูปแบบรายงานทางการทหาร:
-    1. DECISION: [BUY / SELL / HOLD / NO TRADE]
-    2. TACTICAL ANALYSIS: (เหตุผลเชิง Quant และจิตวิทยา)
-    3. ACTION PLAN: (สิ่งที่ต้องทำทันที)
+    You are a Senior Quant Trader (25 yrs experience). Be precise, professional, and strictly manage risk.
+    Asset: {market_data['ticker']} | Price: {market_data['price']:.2f}
+    EMA200: {market_data['ema200']:.2f} | RSI: {market_data['rsi']:.2f} | ATR: {market_data['atr']:.2f}
+    SL: {market_data['sl']:.2f} | TP: {market_data['tp']:.2f}
+    
+    User request: "{user_intent}"
+    
+    Answer in Thai with a professional tone:
+    1. Verdict: (Buy / Sell / Wait)
+    2. Quantitative Analysis: (Briefly explain based on numbers)
+    3. Next Action: (Clear, actionable step)
     """
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash") # ใช้ 1.5 flash รุ่นมาตรฐาน
-        response = model.generate_content(prompt)
-        return response.text
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        return model.generate_content(prompt).text
     except Exception as e:
-        return f"⚠️ **SYSTEM ERROR [AI API]:** `{str(e)}`"
+        return f"⚠️ เกิดข้อผิดพลาดในการเชื่อมต่อ AI: {str(e)}"
 
 # ==========================================
-# โครงสร้างหน้า Dashboard
+# 4. ออกแบบโครงสร้างหน้าจอ (Information Architecture)
 # ==========================================
-st.title("🛰️ VETERAN // COMMAND CENTER")
+st.title("🏛️ Veteran Precision Advisor")
+st.markdown("ระบบผู้ช่วยวิเคราะห์และจัดการความเสี่ยงเชิงปริมาณ (Quantitative Analysis)")
 st.markdown("---")
 
-# แบ่งหน้าด้วยระบบ Tab
-tab1, tab2, tab3 = st.tabs(["[01. MISSION CONTROL]", "[02. DEEP QUANT LAB]", "[03. SYSTEM LOGS]"])
+# แบ่งสัดส่วนหน้าจอแบบ 30% : 70% ให้จุดสนใจอยู่ที่ผลวิเคราะห์
+col_input, col_dashboard = st.columns([1, 2.5])
 
-with tab1:
-    col1, col2 = st.columns([1, 2.5])
-    
-    with col1:
-        st.markdown("### 🎯 TARGET LOCK")
-        category = st.selectbox("SELECT SECTOR", ["CRYPTO", "US_STOCKS", "TH_STOCKS"])
-        if category == "CRYPTO":
-            ticker = st.selectbox("SELECT ASSET", ["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD"])
-        elif category == "US_STOCKS":
-            ticker = st.selectbox("SELECT ASSET", ["NVDA", "AAPL", "TSLA", "MSFT"])
-        else:
-            ticker = st.selectbox("SELECT ASSET", ["DELTA.BK", "PTT.BK", "CPALL.BK", "KBANK.BK"])
+with col_input:
+    st.subheader("1. Asset Selection")
+    category = st.selectbox("Market", ["Crypto", "US Stocks", "Thai Stocks (SET)"])
+    if category == "Crypto":
+        ticker = st.selectbox("Symbol", ["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD"])
+    elif category == "US Stocks":
+        ticker = st.selectbox("Symbol", ["NVDA", "AAPL", "TSLA", "MSFT"])
+    else:
+        ticker = st.selectbox("Symbol", ["DELTA.BK", "PTT.BK", "CPALL.BK", "KBANK.BK"])
 
-        if st.button("INITIATE SCAN 🔄"):
-            with st.spinner("SCANNING MARKET DATA..."):
-                # [ลำดับที่ 27] ดึงข้อมูลและเก็บใน Session State
-                st.session_state.data = fetch_and_calc(ticker)
+    st.write("") # เว้นบรรทัดให้หายใจ
+    if st.button("Load Market Data", use_container_width=True):
+        with st.spinner("Fetching live data..."):
+            st.session_state.data = fetch_and_calc(ticker)
 
-    with col2:
-        st.markdown("### 🧠 AI ADVISOR TERMINAL")
-        if "data" in st.session_state and st.session_state.data:
-            d = st.session_state.data
-            
-            # [ลำดับที่ 3, 4] Sci-Fi HUD Data Cards
-            c1, c2, c3 = st.columns(3)
-            c1.metric("ASSET TARGET", d['ticker'])
-            c2.metric("CURRENT PRICE", f"{d['price']:,.2f}")
-            
-            trend = "BULLISH 🟢" if d['price'] > d['ema200'] else "BEARISH 🔴"
-            c3.metric("TREND (EMA200)", trend)
-            
-            c4, c5, c6 = st.columns(3)
-            c4.metric("RSI (14)", f"{d['rsi']:.1f}")
-            c5.metric("STOP LOSS", f"{d['sl']:,.2f}")
-            c6.metric("TAKE PROFIT", f"{d['tp']:,.2f}")
-            
-            st.markdown("---")
-            user_query = st.text_input("TRANSMIT COMMAND:", value="Requesting tactical assessment on current price action.")
-            
-            if st.button("⚡ EXECUTE AI DIRECTIVE"):
-                if not GEMINI_API_KEY:
-                    st.error("ACCESS DENIED: API KEY REQUIRED. PLEASE ENTER KEY IN THE SIDEBAR.")
-                else:
-                    with st.spinner("QUANT ENGINE PROCESSING..."):
-                        advice = ask_veteran(d, user_query)
-                        st.info(advice)
-        else:
-            st.warning("SYSTEM STANDBY. AWAITING TARGET SCAN.")
-
-with tab2:
-    st.markdown("### 🔬 DEEP QUANT LAB (UPCOMING)")
-    st.caption("ระบบอินดิเคเตอร์เชิงลึก (RVOL, Multi-Timeframe) จะถูกติดตั้งที่นี่ในเฟสถัดไป")
-
-with tab3:
-    st.markdown("### 🗄️ DATABASE & LOGS (UPCOMING)")
-    st.caption("ระบบบันทึกประวัติการเทรดและสถิติเข้า Google Sheets จะปรากฏในแท็บนี้")
+with col_dashboard:
+    st.subheader("2. Market Overview")
+    if "data" in st.session_state and st.session_state.data:
+        d = st.session_state.data
+        
+        # จัดเรียงตัวเลขสำคัญให้อ่านง่าย (Z-Pattern)
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Last Price", f"{d['price']:,.2f}")
+        trend = "BULLISH" if d['price'] > d['ema200'] else "BEARISH"
+        m2.metric("Trend (EMA 200)", trend, delta="Above" if trend == "BULLISH" else "Below", delta_color="normal" if trend == "BULLISH" else "inverse")
+        m3.metric("RSI (14)", f"{d['rsi']:.1f}")
+        
+        st.write("")
+        m4, m5, m6 = st.columns(3)
+        m4.metric("Volatility (ATR)", f"{d['atr']:.2f}")
+        m5.metric("Target Stop Loss", f"{d['sl']:,.2f}")
+        m6.metric("Target Take Profit", f"{d['tp']:,.2f}")
+        
+        st.markdown("---")
+        st.subheader("3. Strategic Execution")
+        user_query = st.text_input("Your inquiry or strategy:", value="ประเมินความเสี่ยงและจุดเข้าซื้อ ณ ราคาปัจจุบันให้หน่อย")
+        
+        # ปุ่มที่สองนี้ CSS จะบังคับให้เป็นสีน้ำเงิน (Primary Call to Action)
+        if st.button("✨ Get Professional Advice", use_container_width=True):
+            if not GEMINI_API_KEY:
+                st.error("Please enter your Gemini API Key in the sidebar.")
+            else:
+                with st.spinner("Analyzing quantitative data..."):
+                    advice = ask_veteran(d, user_query)
+                    st.success("Analysis Complete")
+                    st.markdown(f"> {advice}")
+    else:
+        # State ว่างเปล่าที่ดูสุภาพ
+        st.info("👈 Please select an asset and load market data to begin analysis.")
