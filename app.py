@@ -60,9 +60,12 @@ def ask_veteran(market_data: dict, user_intent: str):
     2. เหตุผลเชิงตัวเลขและจิตวิทยาตลาด (อ้างอิงข้อมูลข้างต้นเท่านั้น ห้ามเดา)
     3. แผน Action ที่ต้องทำทันที พร้อมจุดเสี่ยงที่ต้องระวัง
     """
-    model = genai.GenerativeModel("gemini-1.0-pro")
-    response = model.generate_content(prompt)
-    return response.text
+    try:
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return f"⚠️ **เกิดข้อผิดพลาดจาก AI API:** `{str(e)}`\n\nโปรดตรวจสอบว่า API Key ถูกต้อง หรือปิด/เปิดแอปใหม่อีกครั้ง"
 
 st.title("🏛️ Veteran Precision Advisor (25 Years Exp.)")
 st.caption("ระบบวิเคราะห์และสั่งการเทรดระดับสถาบัน: หุ้นไทย | หุ้นนอก | คริปโต")
