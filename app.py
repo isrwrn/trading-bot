@@ -158,7 +158,7 @@ def analyze_with_ai(data, prompt_text, api_key):
     คำถาม: {prompt_text}
     """
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-3.8-flash")
         return model.generate_content(sys_prompt).text
     except Exception as e: return f"⚠️ ตรวจพบข้อผิดพลาด: {str(e)}"
 
